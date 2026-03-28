@@ -68,12 +68,11 @@ class UpdatePom {
 			return;
 		}
 
-		Document document = FileDocumentManager.getInstance().getDocument(pomFile);
-		if (document != null) {
-			PsiDocumentManager.getInstance(project).commitDocument(document);
-		}
-
 		Runnable updatePom = () -> {
+			Document document = FileDocumentManager.getInstance().getDocument(pomFile);
+			if (document != null) {
+				PsiDocumentManager.getInstance(project).commitDocument(document);
+			}
 
 			var psiFile = PsiManager.getInstance(project).findFile(pomFile);
 			if (!(psiFile instanceof XmlFile file)) {

@@ -56,7 +56,7 @@ public class UpdateMavenDependenciesAction extends AnAction {
 		Project project = e.getProject();
 		Presentation presentation = e.getPresentation();
 
-		presentation.setText(MessageBundle.message("action.title"));
+		presentation.setText(MessageBundle.message("biz.paluch.mavenupdater.UpdateMavenDependencies.text"));
 		presentation.setDescription(MessageBundle.message("action.description"));
 		presentation.setIcon(MavenUpdater.ICON);
 		presentation.setVisible(true);

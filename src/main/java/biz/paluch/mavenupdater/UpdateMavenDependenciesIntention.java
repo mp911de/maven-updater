@@ -43,7 +43,7 @@ public class UpdateMavenDependenciesIntention extends BaseElementAtCaretIntentio
 
 	@Override
 	public String getText() {
-		return MessageBundle.message("action.title");
+		return MessageBundle.message("biz.paluch.mavenupdater.UpdateMavenDependencies.text");
 	}
 
 	@Override

@@ -51,7 +51,8 @@ The currently open <code>pom.xml</code> file is used to apply updates to. The pl
 
 	<actions>
 		<action id="biz.paluch.mavenupdater.UpdateMavenDependencies"
-		        class="biz.paluch.mavenupdater.UpdateMavenDependenciesAction">
+		        class="biz.paluch.mavenupdater.UpdateMavenDependenciesAction"
+		        text="Update Maven Plugins and Dependencies…">
 			<add-to-group group-id="ToolsMenu" anchor="last"/>
 		</action>
 	</actions>
