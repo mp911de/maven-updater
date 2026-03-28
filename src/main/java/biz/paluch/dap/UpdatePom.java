@@ -15,7 +15,7 @@
  */
 package biz.paluch.dap;
 
-import biz.paluch.dap.artifact.ArtifactCoordinate;
+import biz.paluch.dap.artifact.ArtifactId;
 import biz.paluch.dap.artifact.ArtifactVersion;
 import biz.paluch.dap.artifact.DeclarationSource;
 import biz.paluch.dap.artifact.DependencyUpdateOption;
@@ -125,7 +125,7 @@ class UpdatePom {
 		}
 	}
 
-	private void updateDeclaration(XmlTag projectTag, ArtifactCoordinate coordinate, DeclarationSource vds,
+	private void updateDeclaration(XmlTag projectTag, ArtifactId coordinate, DeclarationSource vds,
 			String newVersion) {
 
 		List<XmlTag> tags = findDependencyOrPluginTag(projectTag, coordinate, vds);
@@ -150,7 +150,7 @@ class UpdatePom {
 		}
 	}
 
-	private List<XmlTag> findDependencyOrPluginTag(XmlTag projectTag, ArtifactCoordinate coordinate,
+	private List<XmlTag> findDependencyOrPluginTag(XmlTag projectTag, ArtifactId coordinate,
 			DeclarationSource source) {
 		String groupId = coordinate.groupId();
 		String artifactId = coordinate.artifactId();
@@ -258,11 +258,11 @@ class UpdatePom {
 			tag.getValue().setText(value);
 	}
 
-	record DependencyUpdate(ArtifactCoordinate coordinate, ArtifactVersion version,
+	record DependencyUpdate(ArtifactId coordinate, ArtifactVersion version,
 			Collection<DeclarationSource> declarationSources, Collection<VersionSource> versionSources) {
 
 		public static DependencyUpdate of(DependencyUpdateOption option) {
-			return new DependencyUpdate(option.coordinates(), option.getRequiredUpdateTo(),
+			return new DependencyUpdate(option.artifactId(), option.getRequiredUpdateTo(),
 					option.getCandidate().getDeclarationSources(), option.getCandidate().getVersionSources());
 		}
 

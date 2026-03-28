@@ -98,8 +98,8 @@ public final class DependencyUpdateOption {
 		return !versionOptions.isEmpty() && versionOptions.get(0).version().isNewer(candidate.getCurrentVersion());
 	}
 
-	public biz.paluch.mavenupdater.artifact.ArtifactCoordinate coordinates() {
-		return candidate.getCoordinate();
+	public ArtifactId artifactId() {
+		return candidate.getArtifactId();
 	}
 
 	public ArtifactVersion currentVersion() {
@@ -125,7 +125,7 @@ public final class DependencyUpdateOption {
 	public ArtifactVersion getRequiredUpdateTo() {
 
 		if (updateTo == null) {
-			throw new IllegalStateException("Update version for " + coordinates() + " is required but not set");
+			throw new IllegalStateException("Update version for " + artifactId() + " is required but not set");
 		}
 		return updateTo;
 	}
@@ -161,7 +161,7 @@ public final class DependencyUpdateOption {
 
 	@Override
 	public String toString() {
-		return candidate.getCoordinate() + ": " + currentVersion() + " -> ["
+		return candidate.getArtifactId() + ": " + currentVersion() + " -> ["
 				+ filtered.stream().map(VersionOption::version).map(Object::toString).collect(Collectors.joining(", ")) + "]";
 	}
 }

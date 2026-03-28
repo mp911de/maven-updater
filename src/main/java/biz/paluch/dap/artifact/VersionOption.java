@@ -15,15 +15,24 @@
  */
 package biz.paluch.dap.artifact;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.StringUtils;
 
 /**
  * A version string with optional release date from Maven metadata (for display in version dropdown).
  */
 public record VersionOption(ArtifactVersion version,
 		@Nullable LocalDateTime releaseDate) implements Comparable<VersionOption> {
+
+	public static VersionOption from(String version, @Nullable String date) {
+		return new VersionOption(ArtifactVersion.of(version),
+				StringUtils.hasText(date) ? LocalDateTime.of(LocalDate.parse(date), LocalTime.MIDNIGHT) : null);
+	}
 
 	@Override
 	public int compareTo(VersionOption o) {

@@ -15,7 +15,7 @@
  */
 package biz.paluch.dap;
 
-import biz.paluch.dap.artifact.ArtifactCoordinate;
+import biz.paluch.dap.artifact.ArtifactId;
 import biz.paluch.dap.artifact.ArtifactVersion;
 import biz.paluch.dap.artifact.DeclarationSource;
 import biz.paluch.dap.artifact.DependencyUpdateOption;
@@ -463,7 +463,7 @@ class DependencyCheckDialog extends DialogWrapper {
 		}
 	}
 
-	static class DependencyCoordinateColumn extends ColumnInfo<DependencyUpdateOption, ArtifactCoordinate> {
+	static class DependencyCoordinateColumn extends ColumnInfo<DependencyUpdateOption, ArtifactId> {
 
 		DefaultTableCellRenderer tcr = new DefaultTableCellRenderer() {
 
@@ -475,7 +475,7 @@ class DependencyCheckDialog extends DialogWrapper {
 						row, column);
 				DependencyUpdateOption option = ModelUtil.getOption(table, row);
 
-				String tooltip = option.coordinates().toString();
+				String tooltip = option.artifactId().toString();
 				boolean hasPropertyVersion = option.hasPropertyVersion();
 				if (hasPropertyVersion) {
 					VersionSource.VersionPropertySource propertyVersion = option.getPropertyVersion();
@@ -503,7 +503,7 @@ class DependencyCheckDialog extends DialogWrapper {
 
 			@Override
 			protected void setValue(Object value) {
-				if (value instanceof ArtifactCoordinate coordinate) {
+				if (value instanceof ArtifactId coordinate) {
 					setText(coordinate.artifactId());
 					return;
 				}
@@ -542,8 +542,8 @@ class DependencyCheckDialog extends DialogWrapper {
 		}
 
 		@Override
-		public ArtifactCoordinate valueOf(DependencyUpdateOption item) {
-			return item.coordinates();
+		public ArtifactId valueOf(DependencyUpdateOption item) {
+			return item.artifactId();
 		}
 
 		@Override
@@ -553,7 +553,7 @@ class DependencyCheckDialog extends DialogWrapper {
 
 		@Override
 		public Class<?> getColumnClass() {
-			return ArtifactCoordinate.class;
+			return ArtifactId.class;
 		}
 
 	}

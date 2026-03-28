@@ -20,6 +20,8 @@ import biz.paluch.dap.artifact.xml.PomDependency;
 import biz.paluch.dap.artifact.xml.PomProfile;
 import biz.paluch.dap.artifact.xml.PomProjection;
 import biz.paluch.dap.artifact.xml.XmlBeamProjectorFactory;
+import biz.paluch.dap.state.DependencyAssistantService;
+import biz.paluch.dap.state.DependencyAssistantState;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -43,6 +44,7 @@ import org.jetbrains.idea.maven.project.MavenProjectsManager;
 import org.jetbrains.idea.maven.project.MavenProjectsTree;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -56,10 +58,13 @@ import com.intellij.util.concurrency.AppExecutorUtil;
 public class DependencyCheckService {
 
 	private final Project project;
-	private static final Map<biz.paluch.mavenupdater.artifact.ArtifactCoordinate, List<VersionOption>> versionCache = new ConcurrentHashMap<>();
+	private final DependencyAssistantService cacheService;
+	private final DependencyAssistantState state;
 
 	public DependencyCheckService(Project project) {
 		this.project = project;
+		this.cacheService = DependencyAssistantService.getInstance(project);
+		this.state = cacheService.getState();
 	}
 
 	public DependencyUpdates runCheck(ProgressIndicator indicator, String pomContent, @Nullable VirtualFile pomFile)
@@ -102,16 +107,16 @@ public class DependencyCheckService {
 		for (VersionCheckCandidate task : tasks) {
 			futures.add(executor.submit(() -> {
 				try {
-					List<VersionOption> versionOptions = versionCache.get(task.getCoordinate());
+					List<VersionOption> versionOptions = state.getCache().getVersionOptions(task.getArtifactId());
 
-					if (versionOptions == null) {
-						versionOptions = resolver.getVersionSuggestions(task.getCoordinate(), task.getCurrentVersion());
-						versionCache.put(task.getCoordinate(), versionOptions);
+					if (CollectionUtils.isEmpty(versionOptions)) {
+						versionOptions = resolver.getVersionSuggestions(task.getArtifactId(), task.getCurrentVersion());
+						state.getCache().putVersionOptions(task.getArtifactId(), versionOptions);
 					}
 
 					return new ResolverResult(null, versionOptions);
 				} catch (Exception e) {
-					return new ResolverResult(task.getCoordinate() + ": " + e.getMessage(), List.of());
+					return new ResolverResult(task.getArtifactId() + ": " + e.getMessage(), List.of());
 				}
 			}));
 		}
@@ -119,17 +124,17 @@ public class DependencyCheckService {
 		for (int i = 0; i < futures.size(); i++) {
 			indicator.checkCanceled();
 			indicator.setFraction(0.5 + ((i + 1) / (double) futures.size()));
-			indicator.setText2(tasks.get(i).getCoordinate().toString());
+			indicator.setText2(tasks.get(i).getArtifactId().toString());
 			ResolverResult res;
 			try {
 				res = futures.get(i).get();
 			} catch (ExecutionException e) {
 				String msg = e.getCause() != null && e.getCause().getMessage() != null ? e.getCause().getMessage()
 						: e.getMessage();
-				res = new ResolverResult(tasks.get(i).getCoordinate() + ": " + msg, List.of());
+				res = new ResolverResult(tasks.get(i).getArtifactId() + ": " + msg, List.of());
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-				res = new ResolverResult(tasks.get(i).getCoordinate() + ": " + e.getMessage(), List.of());
+				res = new ResolverResult(tasks.get(i).getArtifactId() + ": " + e.getMessage(), List.of());
 			}
 			if (res.error != null) {
 				errors.add(res.error);
@@ -141,7 +146,10 @@ public class DependencyCheckService {
 			}
 		}
 
-		items.sort(Comparator.comparing(DependencyUpdateOption::coordinates));
+		state.getCache().setProperties(collector.getVersionCheckCandidates());
+		state.getCache().recordUpdate();
+		project.scheduleSave();
+		items.sort(Comparator.comparing(DependencyUpdateOption::artifactId));
 
 		return new DependencyUpdates(projectName, items, errors);
 	}
@@ -222,7 +230,7 @@ public class DependencyCheckService {
 	}
 
 	private void doWithDependency(Projects projects, PomDependency dependency, DeclarationSource declarationSource,
-			BiConsumer<biz.paluch.mavenupdater.artifact.ArtifactCoordinate, ArtifactUsage> callback) {
+			BiConsumer<biz.paluch.dap.artifact.ArtifactId, ArtifactUsage> callback) {
 
 		String g = dependency.getGroupId();
 		g = StringUtils.hasText(g) ? g : "org.apache.maven.plugins";
@@ -238,7 +246,8 @@ public class DependencyCheckService {
 
 		VersionSource versionSource = getVersionSource(dependency.getVersion());
 		if (a != null) {
-			callback.accept(new biz.paluch.mavenupdater.artifact.ArtifactCoordinate(g, a), new ArtifactUsage(declarationSource, versionSource));
+			callback.accept(new biz.paluch.dap.artifact.ArtifactId(g, a),
+					new ArtifactUsage(declarationSource, versionSource));
 		}
 	}
 
@@ -354,7 +363,7 @@ public class DependencyCheckService {
 	}
 
 	private void doWithArtifacts(Projects projects, PomProjection pom,
-			BiConsumer<biz.paluch.mavenupdater.artifact.ArtifactCoordinate, ArtifactUsage> callback) {
+			BiConsumer<biz.paluch.dap.artifact.ArtifactId, ArtifactUsage> callback) {
 
 		for (PomDependency dep : pom.getDependencyManagementDependencies()) {
 			doWithDependency(projects, dep, DeclarationSource.managed(), callback);

@@ -44,7 +44,7 @@ public interface ArtifactVersion extends Comparable<ArtifactVersion> {
 	 */
 	static ArtifactVersion of(String version) {
 		return SemanticArtifactVersion.isVersion(version) ? SemanticArtifactVersion.of(version)
-				: biz.paluch.mavenupdater.artifact.ReleaseTrainArtifactVersion.of(version);
+				: biz.paluch.dap.artifact.ReleaseTrainArtifactVersion.of(version);
 	}
 
 	/**

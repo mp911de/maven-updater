@@ -41,6 +41,8 @@ The currently open <code>pom.xml</code> file is used to apply updates to. The pl
 	<resource-bundle>messages.MessageBundle</resource-bundle>
 
 	<extensions defaultExtensionNs="com.intellij">
+		<projectService
+				serviceImplementation="biz.paluch.dap.state.DependencyAssistantService"/>
 		<intentionAction>
 			<category>Maven</category>
 			<language>XML</language>

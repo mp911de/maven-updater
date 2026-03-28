@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.mavenupdater.artifact;
+package biz.paluch.dap.artifact;
 
 import org.springframework.util.StringUtils;
 
 /**
  * Maven artifact coordinates (groupId + artifactId).
  */
-public record ArtifactCoordinate(String groupId, String artifactId) implements Comparable<ArtifactCoordinate> {
+public record ArtifactId(String groupId, String artifactId) implements Comparable<ArtifactId> {
 
-	public static ArtifactCoordinate of(String groupId, String artifactId) {
-		return new ArtifactCoordinate(groupId, artifactId);
+	public static ArtifactId of(String groupId, String artifactId) {
+		return new ArtifactId(groupId, artifactId);
 	}
 
 	public boolean hasArtifactId() {
@@ -31,7 +31,7 @@ public record ArtifactCoordinate(String groupId, String artifactId) implements C
 	}
 
 	@Override
-	public int compareTo(ArtifactCoordinate o) {
+	public int compareTo(ArtifactId o) {
 		return artifactId().compareToIgnoreCase(o.artifactId);
 	}
 

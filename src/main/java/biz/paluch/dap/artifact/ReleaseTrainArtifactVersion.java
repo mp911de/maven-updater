@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.mavenupdater.artifact;
+package biz.paluch.dap.artifact;
 
-import biz.paluch.mavenupdater.artifact.Suffix.Release;
-import biz.paluch.mavenupdater.artifact.Suffix.SemVerSuffix;
-import biz.paluch.mavenupdater.artifact.Suffix.Snapshot;
+import biz.paluch.dap.artifact.Suffix.Release;
+import biz.paluch.dap.artifact.Suffix.SemVerSuffix;
+import biz.paluch.dap.artifact.Suffix.Snapshot;
 
 import java.util.Objects;
 

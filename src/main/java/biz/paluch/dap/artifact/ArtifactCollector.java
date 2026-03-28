@@ -28,22 +28,22 @@ import org.springframework.util.MultiValueMapAdapter;
  */
 public class ArtifactCollector {
 
-	private final MultiValueMap<biz.paluch.mavenupdater.artifact.ArtifactCoordinate, ArtifactUsage> allDependencies = new MultiValueMapAdapter<>(
+	private final MultiValueMap<biz.paluch.dap.artifact.ArtifactId, ArtifactUsage> allDependencies = new MultiValueMapAdapter<>(
 			new TreeMap<>());
-	private final Map<biz.paluch.mavenupdater.artifact.ArtifactCoordinate, VersionCheckCandidate> versionCheckCandidates = new TreeMap<>();
+	private final Map<biz.paluch.dap.artifact.ArtifactId, VersionCheckCandidate> versionCheckCandidates = new TreeMap<>();
 
-	public void add(biz.paluch.mavenupdater.artifact.ArtifactCoordinate coordinate, ArtifactUsage usage) {
+	public void add(biz.paluch.dap.artifact.ArtifactId coordinate, ArtifactUsage usage) {
 		allDependencies.add(coordinate, usage);
 	}
 
-	public void doWithArtifacts(BiConsumer<biz.paluch.mavenupdater.artifact.ArtifactCoordinate, ArtifactUsage> callback) {
+	public void doWithArtifacts(BiConsumer<biz.paluch.dap.artifact.ArtifactId, ArtifactUsage> callback) {
 		allDependencies.forEach((coordinate, usages) -> usages.forEach(usage -> callback.accept(coordinate, usage)));
 	}
 
-	public void registerUpdateCandidate(biz.paluch.mavenupdater.artifact.ArtifactCoordinate artifactCoordinate, ArtifactVersion currentVersion,
+	public void registerUpdateCandidate(biz.paluch.dap.artifact.ArtifactId artifactId, ArtifactVersion currentVersion,
 			DeclarationSource declarationSource, VersionSource versionSource) {
 
-		versionCheckCandidates.computeIfAbsent(artifactCoordinate, ac -> new VersionCheckCandidate(ac, currentVersion))
+		versionCheckCandidates.computeIfAbsent(artifactId, ac -> new VersionCheckCandidate(ac, currentVersion))
 				.addDeclarationSource(declarationSource).addVersionSource(versionSource);
 	}
 

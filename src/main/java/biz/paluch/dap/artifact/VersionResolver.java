@@ -61,7 +61,8 @@ public class VersionResolver {
 	 * Returns version suggestions: same major.minor as current plus all newer versions. Excludes SNAPSHOTs. Release dates
 	 * are parsed from the dependency directory listing (HTML).
 	 */
-	public List<VersionOption> getVersionSuggestions(biz.paluch.mavenupdater.artifact.ArtifactCoordinate coordinate, ArtifactVersion currentVersion) {
+	public List<VersionOption> getVersionSuggestions(biz.paluch.dap.artifact.ArtifactId coordinate,
+			ArtifactVersion currentVersion) {
 
 		String path = coordinate.groupId().replace(".", "/") + "/" + coordinate.artifactId() + "/";
 		String metadataPath = path + "/maven-metadata.xml";
@@ -114,8 +115,8 @@ public class VersionResolver {
 			}
 			if (SemanticArtifactVersion.isVersion(trimmed)) {
 				result.add(SemanticArtifactVersion.of(trimmed));
-			} else if (biz.paluch.mavenupdater.artifact.ReleaseTrainArtifactVersion.isReleaseTrainVersion(trimmed)) {
-				result.add(biz.paluch.mavenupdater.artifact.ReleaseTrainArtifactVersion.of(trimmed));
+			} else if (biz.paluch.dap.artifact.ReleaseTrainArtifactVersion.isReleaseTrainVersion(trimmed)) {
+				result.add(biz.paluch.dap.artifact.ReleaseTrainArtifactVersion.of(trimmed));
 			}
 		}
 

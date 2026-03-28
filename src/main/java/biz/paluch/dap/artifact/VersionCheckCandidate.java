@@ -25,18 +25,18 @@ import org.jspecify.annotations.Nullable;
  */
 public class VersionCheckCandidate {
 
-	private final biz.paluch.mavenupdater.artifact.ArtifactCoordinate coordinate;
+	private final ArtifactId artifactId;
 	private final ArtifactVersion currentVersion;
 	private final Set<VersionSource> versionSources = new LinkedHashSet<>();
 	private final Set<DeclarationSource> declarationSources = new LinkedHashSet<>();
 
-	public VersionCheckCandidate(biz.paluch.mavenupdater.artifact.ArtifactCoordinate coordinate, ArtifactVersion currentVersion) {
-		this.coordinate = coordinate;
+	public VersionCheckCandidate(ArtifactId artifactId, ArtifactVersion currentVersion) {
+		this.artifactId = artifactId;
 		this.currentVersion = currentVersion;
 	}
 
-	public biz.paluch.mavenupdater.artifact.ArtifactCoordinate getCoordinate() {
-		return coordinate;
+	public ArtifactId getArtifactId() {
+		return artifactId;
 	}
 
 	public ArtifactVersion getCurrentVersion() {
