@@ -17,15 +17,18 @@ package biz.paluch.dap;
 
 import javax.swing.Icon;
 
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
 import com.intellij.codeInsight.intention.BaseElementAtCaretIntentionAction;
+import com.intellij.codeInsight.intention.preview.IntentionPreviewInfo;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Iconable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
@@ -74,6 +77,17 @@ public class UpdateMavenDependenciesIntention extends BaseElementAtCaretIntentio
 
 		return parentTag != null && "version".equals(currentTag.getLocalName())
 				&& ("dependency".equals(parentTag.getLocalName()) || "plugin".equals(parentTag.getLocalName()));
+	}
+
+	@Override
+	public boolean startInWriteAction() {
+		return false;
+	}
+
+	@Override
+	public @NotNull IntentionPreviewInfo generatePreview(@NotNull Project project, @NotNull Editor editor,
+			@NotNull PsiFile file) {
+		return IntentionPreviewInfo.EMPTY;
 	}
 
 	@Override
