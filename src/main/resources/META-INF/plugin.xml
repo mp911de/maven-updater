@@ -1,9 +1,9 @@
 <idea-plugin>
-	<id>biz.paluch.maven-updater</id>
+	<id>biz.paluch.dependency-assistant</id>
 
-	<name>Maven Updater</name>
+	<name>Dependency Assistant</name>
 
-	<vendor url="https://github.com/mp911de/maven-updater">Mark Paluch</vendor>
+	<vendor url="https://github.com/mp911de/dependency-assistant">Mark Paluch</vendor>
 	<category>Maven</category>
 
 	<description><![CDATA[
@@ -32,7 +32,7 @@ The support includes:
 The currently open <code>pom.xml</code> file is used to apply updates to. The plugin considers all active Maven projects to scan for dependencies and only suggests plugins and dependencies whose version can be determined from the currently open <code>pom.xml</code> file.
 
 <p>
-<a href="https://github.com/mp911de/maven-updater">GitHub Repository: mp911de/maven-updater</a>
+<a href="https://github.com/mp911de/dependency-assistant">GitHub Repository: mp911de/dependency-assistant</a>
     ]]></description>
 
 
@@ -44,14 +44,14 @@ The currently open <code>pom.xml</code> file is used to apply updates to. The pl
 		<intentionAction>
 			<category>Maven</category>
 			<language>XML</language>
-			<className>biz.paluch.mavenupdater.UpdateMavenDependenciesIntention
+			<className>biz.paluch.dap.UpdateMavenDependenciesIntention
 			</className>
 		</intentionAction>
 	</extensions>
 
 	<actions>
-		<action id="biz.paluch.mavenupdater.UpdateMavenDependencies"
-		        class="biz.paluch.mavenupdater.UpdateMavenDependenciesAction"
+		<action id="biz.paluch.dap.UpdateMavenDependencies"
+		        class="biz.paluch.dap.UpdateMavenDependenciesAction"
 		        text="Update Maven Plugins and Dependencies…">
 			<add-to-group group-id="ToolsMenu" anchor="last"/>
 		</action>

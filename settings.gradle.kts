@@ -1,1 +1,1 @@
-rootProject.name = "maven-updater"
+rootProject.name = "dependency-assistant"
