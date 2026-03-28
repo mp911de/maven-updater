@@ -45,7 +45,7 @@ public class VersionResolver {
 
 	private static final Logger LOG = Logger.getInstance(VersionResolver.class);
 
-	private final List<String> repositoryUrls;
+	private final List<RemoteRepository> reposirepositoriesoryUrls;
 
 	private static final Pattern DIRECTORY_LISTING_LINE_REGEX = Pattern
 			.compile("<a (?>[^>]+)>([^/]+)/</a>(?>\\s*)(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2})(?>\\s*)(?>-)?");
@@ -53,8 +53,8 @@ public class VersionResolver {
 	private static final DateTimeFormatter DIRECTORY_LISTING_DATE_FORMATTER = DateTimeFormatter
 			.ofPattern("uuuu-MM-dd HH:mm");
 
-	public VersionResolver(List<String> repositoryUrls) {
-		this.repositoryUrls = repositoryUrls;
+	public VersionResolver(List<RemoteRepository> repositoryUrls) {
+		this.reposirepositoriesoryUrls = repositoryUrls;
 	}
 
 	/**
@@ -70,7 +70,8 @@ public class VersionResolver {
 		Map<String, LocalDateTime> releaseDates = new HashMap<>();
 		Set<ArtifactVersion> versions = new TreeSet<>(Comparator.reverseOrder());
 
-		for (String baseUrl : repositoryUrls) {
+		for (RemoteRepository repository : reposirepositoriesoryUrls) {
+			String baseUrl = repository.url();
 			String base = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 			URI metadataUri = URI.create(base).resolve(metadataPath);
 			URI directoryUri = URI.create(base).resolve(path);

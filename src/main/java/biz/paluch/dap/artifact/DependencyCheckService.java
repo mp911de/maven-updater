@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -96,7 +97,7 @@ public class DependencyCheckService {
 					List.of(MessageBundle.message("action.check.dependencies.empty")));
 		}
 
-		List<String> repoUrls = collectRepositoryUrls(mavenProject);
+		List<RemoteRepository> repoUrls = collectRepositories(mavenProject);
 		VersionResolver resolver = new VersionResolver(repoUrls);
 		List<DependencyUpdateOption> items = new ArrayList<>();
 		List<String> errors = new ArrayList<>();
@@ -272,13 +273,20 @@ public class DependencyCheckService {
 		return project(new String(file.contentsToByteArray()));
 	}
 
-	private List<String> collectRepositoryUrls(MavenProject mavenProject) {
+	private List<RemoteRepository> collectRepositories(MavenProject mavenProject) {
 
-		Set<String> urls = new java.util.LinkedHashSet<>();
+		Set<RemoteRepository> urls = new LinkedHashSet<>();
+		for (MavenRemoteRepository repository : mavenProject.getRemoteRepositories()) {
+			String url = repository.getUrl();
+			if (url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
+				urls.add(new RemoteRepository(repository.getId(), url.endsWith("/") ? url : url + "/"));
+			}
+		}
+
 		for (MavenRemoteRepository repository : mavenProject.getRemotePluginRepositories()) {
 			String url = repository.getUrl();
 			if (url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
-				urls.add(url.endsWith("/") ? url : url + "/");
+				urls.add(new RemoteRepository(repository.getId(), url.endsWith("/") ? url : url + "/"));
 			}
 		}
 
