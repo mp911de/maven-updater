@@ -48,4 +48,28 @@ public class XmlUtil {
 		return propertyTag;
 	}
 
+	public static @Nullable XmlTag getVersionTag(PsiElement contextElement) {
+
+		PsiFile file = contextElement.getContainingFile();
+		if (!(file instanceof XmlFile xmlFile) || !MavenUtils.isMavenPomFile(xmlFile)) {
+			return null;
+		}
+
+		XmlTag versionTag = PsiTreeUtil.getParentOfType(contextElement, XmlTag.class, false);
+		if (versionTag == null) {
+			return null;
+		}
+
+		XmlTag owner = versionTag.getParentTag();
+		if (owner == null) {
+			return null;
+		}
+
+		if ("dependency".equals(owner.getLocalName()) || "plugin".equals(owner.getLocalName())) {
+			return versionTag;
+		}
+
+		return null;
+	}
+
 }

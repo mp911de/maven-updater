@@ -15,17 +15,16 @@
  */
 package biz.paluch.dap;
 
-import static com.intellij.patterns.PlatformPatterns.*;
+import static com.intellij.patterns.PsiJavaPatterns.*;
 
 import biz.paluch.dap.artifact.ArtifactId;
-import biz.paluch.dap.state.Artifact;
 import biz.paluch.dap.state.Cache;
 import biz.paluch.dap.state.DependencyAssistantService;
-import biz.paluch.dap.state.Property;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
+import org.springframework.util.StringUtils;
 
 import com.intellij.codeInsight.completion.CompletionContributor;
 import com.intellij.codeInsight.completion.CompletionParameters;
@@ -33,27 +32,23 @@ import com.intellij.codeInsight.completion.CompletionProvider;
 import com.intellij.codeInsight.completion.CompletionResultSet;
 import com.intellij.codeInsight.completion.CompletionType;
 import com.intellij.openapi.project.Project;
-import com.intellij.patterns.PlatformPatterns;
 import com.intellij.patterns.XmlPatterns;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.psi.xml.XmlTokenType;
 import com.intellij.util.ProcessingContext;
 
 /**
- * Provides version auto-completion suggestions when editing a Maven {@code <properties>} value whose property name maps
- * to a known dependency artifact in the {@link Cache}.
+ * Provides version auto-completion suggestions when editing a Maven {@code <version>} value.
  * <p>
  * Invoking completion once ({@code Ctrl+Space}) filters by the typed prefix. Invoking it a second time shows all cached
  * versions regardless of the current text.
  */
-public class PropertyVersionCompletionContributor extends CompletionContributor {
+public class DependencyVersionCompletionContributor extends CompletionContributor {
 
-	public PropertyVersionCompletionContributor() {
-		extend(CompletionType.BASIC, PlatformPatterns.psiElement() //
-				.withElementType(XmlTokenType.XML_DATA_CHARACTERS) //
+	public DependencyVersionCompletionContributor() {
+		extend(CompletionType.BASIC, psiElement().withElementType(XmlTokenType.XML_DATA_CHARACTERS) //
 				.and(psiElement().inside(XmlPatterns.xmlFile())) //
-				.and(psiElement().inside(XmlPatterns.xmlTag().withParent(XmlPatterns.xmlTag().withName("properties")))),
-				new VersionSuggestionProvider());
+				.and(psiElement().inside(XmlPatterns.xmlTag().withLocalName("version"))), new VersionSuggestionProvider());
 	}
 
 	private static final class VersionSuggestionProvider extends CompletionProvider<CompletionParameters> {
@@ -63,38 +58,36 @@ public class PropertyVersionCompletionContributor extends CompletionContributor 
 				CompletionResultSet result) {
 
 			Project project = parameters.getEditor().getProject();
-			XmlTag propertyTag = XmlUtil.getPropertyTag(parameters.getPosition());
-			if (project == null || propertyTag == null) {
+			XmlTag versionTag = XmlUtil.getVersionTag(parameters.getPosition());
+			if (project == null || versionTag == null) {
 				return;
 			}
 
-			String propertyName = propertyTag.getLocalName();
-			Cache cache = DependencyAssistantService.getInstance(project).getState().getCache();
+			XmlTag parentTag = versionTag.getParentTag();
+			String artifactId = parentTag.getSubTagText("artifactId");
+			String groupId = parentTag.getSubTagText("groupId");
 
-			// Show all cached versions on a second invocation (Ctrl+Space twice)
-			CompletionResultSet versionsResult = parameters.getInvocationCount() > 1 ? result.withPrefixMatcher("") : result;
+			if (StringUtils.hasText(artifactId) && StringUtils.hasText(groupId)) {
 
-			List<SuggestionProviderUtil.ArtifactVersion> allOptions = findVersions(propertyName, cache);
-			if (allOptions.isEmpty()) {
-				return;
+				Cache cache = DependencyAssistantService.getInstance(project).getState().getCache();
+
+				// Show all cached versions on a second invocation (Ctrl+Space twice)
+				CompletionResultSet versionsResult = parameters.getInvocationCount() > 1 ? result.withPrefixMatcher("")
+						: result;
+
+				List<SuggestionProviderUtil.ArtifactVersion> allOptions = findVersions(ArtifactId.of(groupId, artifactId),
+						cache);
+				if (allOptions.isEmpty()) {
+					return;
+				}
+
+				SuggestionProviderUtil.addSuggestions(allOptions, versionsResult, it -> "");
 			}
-
-			SuggestionProviderUtil.addSuggestions(allOptions, versionsResult, ArtifactId::toString);
 		}
 
-		private static List<SuggestionProviderUtil.ArtifactVersion> findVersions(String propertyName, Cache cache) {
+		private static List<SuggestionProviderUtil.ArtifactVersion> findVersions(ArtifactId artifactId, Cache cache) {
 
-			Property property = cache.getProperty(propertyName);
-			if (property == null) {
-				return List.of();
-			}
-
-			List<SuggestionProviderUtil.ArtifactVersion> options = new ArrayList<>();
-			for (Artifact artifact : property.artifacts()) {
-				options.addAll(SuggestionProviderUtil.findOptions(artifact.toArtifactId(), cache));
-
-				break;
-			}
+			List<SuggestionProviderUtil.ArtifactVersion> options = SuggestionProviderUtil.findOptions(artifactId, cache);
 			options.sort(Comparator.reverseOrder());
 			return options;
 		}

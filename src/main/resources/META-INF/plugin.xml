@@ -52,6 +52,10 @@ The currently open <code>pom.xml</code> file is used to apply updates to. The pl
 		<completion.contributor
 				language="XML"
 				implementationClass="biz.paluch.dap.PropertyVersionCompletionContributor"/>
+		<completion.contributor
+				language="XML"
+				order="first"
+				implementationClass="biz.paluch.dap.DependencyVersionCompletionContributor"/>
 		<platform.backend.documentation.psiTargetProvider
 				implementation="biz.paluch.dap.PropertyVersionDocumentationProvider"/>
 	</extensions>
