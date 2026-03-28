@@ -28,24 +28,24 @@ import org.springframework.util.MultiValueMapAdapter;
  *
  * @author Mark Paluch
  */
-public class ArtifactCollector {
+public class DependencyCollector {
 
-	private final MultiValueMap<biz.paluch.dap.artifact.ArtifactId, ArtifactUsage> allDependencies = new MultiValueMapAdapter<>(
+	private final MultiValueMap<ArtifactId, ArtifactUsage> allDependencies = new MultiValueMapAdapter<>(
 			new TreeMap<>());
-	private final Map<biz.paluch.dap.artifact.ArtifactId, VersionCheckCandidate> versionCheckCandidates = new TreeMap<>();
+	private final Map<ArtifactId, Dependency> versionCheckCandidates = new TreeMap<>();
 
-	public void add(biz.paluch.dap.artifact.ArtifactId coordinate, ArtifactUsage usage) {
+	public void add(ArtifactId coordinate, ArtifactUsage usage) {
 		allDependencies.add(coordinate, usage);
 	}
 
-	public void doWithArtifacts(BiConsumer<biz.paluch.dap.artifact.ArtifactId, ArtifactUsage> callback) {
+	public void doWithArtifacts(BiConsumer<ArtifactId, ArtifactUsage> callback) {
 		allDependencies.forEach((coordinate, usages) -> usages.forEach(usage -> callback.accept(coordinate, usage)));
 	}
 
-	public void registerUpdateCandidate(biz.paluch.dap.artifact.ArtifactId artifactId, ArtifactVersion currentVersion,
+	public void registerUpdateCandidate(ArtifactId artifactId, ArtifactVersion currentVersion,
 			DeclarationSource declarationSource, VersionSource versionSource) {
 
-		versionCheckCandidates.computeIfAbsent(artifactId, ac -> new VersionCheckCandidate(ac, currentVersion))
+		versionCheckCandidates.computeIfAbsent(artifactId, ac -> new Dependency(ac, currentVersion))
 				.addDeclarationSource(declarationSource).addVersionSource(versionSource);
 	}
 
@@ -53,8 +53,11 @@ public class ArtifactCollector {
 		return versionCheckCandidates.isEmpty();
 	}
 
-	public Collection<VersionCheckCandidate> getVersionCheckCandidates() {
+	public Collection<Dependency> getDependencies() {
 		return versionCheckCandidates.values();
 	}
 
+	public Dependency getDependency(ArtifactId artifactId) {
+		return versionCheckCandidates.get(artifactId);
+	}
 }

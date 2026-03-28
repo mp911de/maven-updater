@@ -30,39 +30,39 @@ import org.jspecify.annotations.Nullable;
 /**
  * Version and update info for a single dependency.
  */
-public final class DependencyUpdateOption {
+public final class DependencyUpdateOption implements HasArtifactId {
 
-	private final VersionCheckCandidate candidate;
-	private final List<VersionOption> versionOptions;
-	private final List<VersionOption> filtered;
+	private final Dependency dependency;
+	private final List<Release> releases;
+	private final List<Release> filtered;
 	private @Nullable ArtifactVersion updateTo;
-	private final Map<UpgradeStrategy, VersionOption> targets;
+	private final Map<UpgradeStrategy, Release> targets;
 	private boolean applyUpdate;
 
-	public DependencyUpdateOption(VersionCheckCandidate candidate, List<VersionOption> versionOptions) {
-		this.candidate = candidate;
-		this.versionOptions = versionOptions;
-		this.filtered = filterVersionSuggestions(versionOptions, candidate.getCurrentVersion());
-		this.updateTo = candidate.getCurrentVersion();
+	public DependencyUpdateOption(Dependency dependency, List<Release> releases) {
+		this.dependency = dependency;
+		this.releases = releases;
+		this.filtered = filterVersionSuggestions(releases, dependency.getCurrentVersion());
+		this.updateTo = dependency.getCurrentVersion();
 		this.applyUpdate = false;
 		this.targets = new LinkedHashMap<>();
 
 		for (UpgradeStrategy strategy : UpgradeStrategy.values()) {
-			VersionOption option = strategy.select(currentVersion(), versionOptions);
+			Release option = strategy.select(currentVersion(), releases);
 			if (option != null && !option.version().equals(currentVersion())) {
 				targets.put(strategy, option);
 			}
 		}
 	}
 
-	private List<VersionOption> filterVersionSuggestions(Collection<VersionOption> versions,
+	private List<Release> filterVersionSuggestions(Collection<Release> versions,
 			@Nullable ArtifactVersion current) {
 
-		Set<VersionOption> result = new TreeSet<>(Comparator.reverseOrder());
-		List<VersionOption> newer = new ArrayList<>();
-		List<VersionOption> older = new ArrayList<>();
+		Set<Release> result = new TreeSet<>(Comparator.reverseOrder());
+		List<Release> newer = new ArrayList<>();
+		List<Release> older = new ArrayList<>();
 
-		for (VersionOption version : versions.stream().sorted().toList()) {
+		for (Release version : versions.stream().sorted().toList()) {
 
 			if (current != null && current.equals(version.version())) {
 				result.add(version);
@@ -81,8 +81,8 @@ public final class DependencyUpdateOption {
 		return List.copyOf(result);
 	}
 
-	private static void doAdd(@Nullable ArtifactVersion current, VersionOption version, List<VersionOption> newer,
-			List<VersionOption> older) {
+	private static void doAdd(@Nullable ArtifactVersion current, Release version, List<Release> newer,
+			List<Release> older) {
 		if (current == null || version.isNewer(current)) {
 			newer.add(version);
 		} else if (version.isBugFixVersion() || version.isReleaseVersion()) {
@@ -90,32 +90,33 @@ public final class DependencyUpdateOption {
 		}
 	}
 
+	@Override
+	public ArtifactId getArtifactId() {
+		return this.dependency.getArtifactId();
+	}
+
 	public boolean hasUpgradeTargets() {
 		return !targets.isEmpty();
 	}
 
 	public boolean hasUpdateCandidate() {
-		return !versionOptions.isEmpty() && versionOptions.get(0).version().isNewer(candidate.getCurrentVersion());
-	}
-
-	public ArtifactId artifactId() {
-		return candidate.getArtifactId();
+		return !releases.isEmpty() && releases.get(0).version().isNewer(dependency.getCurrentVersion());
 	}
 
 	public ArtifactVersion currentVersion() {
-		return candidate.getCurrentVersion();
+		return dependency.getCurrentVersion();
 	}
 
-	public List<VersionOption> versionOptions() {
-		return versionOptions;
+	public List<Release> versionOptions() {
+		return releases;
 	}
 
-	public List<VersionOption> filtered() {
+	public List<Release> filtered() {
 		return filtered;
 	}
 
 	public DeclarationSource source() {
-		return candidate.getDeclarationSources().iterator().next();
+		return dependency.getDeclarationSources().iterator().next();
 	}
 
 	public @Nullable ArtifactVersion getUpdateTo() {
@@ -125,7 +126,8 @@ public final class DependencyUpdateOption {
 	public ArtifactVersion getRequiredUpdateTo() {
 
 		if (updateTo == null) {
-			throw new IllegalStateException("Update version for " + artifactId() + " is required but not set");
+			throw new IllegalStateException(
+					"Update version for " + getArtifactId().artifactId() + " is required but not set");
 		}
 		return updateTo;
 	}
@@ -143,25 +145,25 @@ public final class DependencyUpdateOption {
 		this.applyUpdate = applyUpdate;
 	}
 
-	public VersionCheckCandidate getCandidate() {
-		return candidate;
+	public Dependency getDependency() {
+		return dependency;
 	}
 
 	public boolean hasPropertyVersion() {
-		return candidate.hasPropertyVersion();
+		return dependency.hasPropertyVersion();
 	}
 
 	public VersionSource.VersionPropertySource getPropertyVersion() {
-		return candidate.findPropertyVersion();
+		return dependency.findPropertyVersion();
 	}
 
-	public Map<UpgradeStrategy, VersionOption> getTargets() {
+	public Map<UpgradeStrategy, Release> getTargets() {
 		return targets;
 	}
 
 	@Override
 	public String toString() {
-		return candidate.getArtifactId() + ": " + currentVersion() + " -> ["
-				+ filtered.stream().map(VersionOption::version).map(Object::toString).collect(Collectors.joining(", ")) + "]";
+		return dependency.getArtifactId() + ": " + currentVersion() + " -> ["
+				+ filtered.stream().map(Release::version).map(Object::toString).collect(Collectors.joining(", ")) + "]";
 	}
 }

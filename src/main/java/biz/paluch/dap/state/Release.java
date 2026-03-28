@@ -15,8 +15,6 @@
  */
 package biz.paluch.dap.state;
 
-import biz.paluch.dap.artifact.VersionOption;
-
 import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
@@ -38,16 +36,16 @@ public class Release {
 		this.date = date;
 	}
 
-	public static Release from(VersionOption versionOption) {
-		if (versionOption.releaseDate() != null) {
-			return new Release(versionOption.version().toString(), versionOption.releaseDate().toLocalDate().toString());
+	public static Release from(biz.paluch.dap.artifact.Release release) {
+		if (release.releaseDate() != null) {
+			return new Release(release.version().toString(), release.releaseDate().toLocalDate().toString());
 		}
-		return new Release(versionOption.version().toString(), null);
+		return new Release(release.version().toString(), null);
 	}
 
 	@Transient
-	public VersionOption toVersionOption() {
-		return VersionOption.from(version(), date());
+	public biz.paluch.dap.artifact.Release toVersionOption() {
+		return biz.paluch.dap.artifact.Release.from(version(), date());
 	}
 
 	@Attribute

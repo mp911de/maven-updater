@@ -16,25 +16,22 @@
 package biz.paluch.dap.state;
 
 import biz.paluch.dap.artifact.ArtifactId;
-import biz.paluch.dap.artifact.VersionCheckCandidate;
-import biz.paluch.dap.artifact.VersionOption;
-import biz.paluch.dap.artifact.VersionSource;
+import biz.paluch.dap.artifact.Release;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.idea.maven.model.MavenId;
 
 import com.intellij.util.xmlb.annotations.Attribute;
 import com.intellij.util.xmlb.annotations.Tag;
 import com.intellij.util.xmlb.annotations.Transient;
 import com.intellij.util.xmlb.annotations.XCollection;
 
+@Tag("cache")
 public class Cache {
 
 	private static final Clock CLOCK = Clock.systemUTC();
@@ -47,10 +44,8 @@ public class Cache {
 	@Attribute private long lastUpdateTimestamp = 0L;
 	private final @XCollection(propertyElementName = "artifacts", elementName = "artifact",
 			style = XCollection.Style.v2) List<Artifact> artifacts = new ArrayList<>();
-	private final @Tag @XCollection(propertyElementName = "properties", elementName = "property",
-			style = XCollection.Style.v2) List<Property> properties = new ArrayList<>();
-
-	@Transient private final Map<String, Property> propertyMap = new java.util.TreeMap<>();
+	private final @Tag @XCollection(propertyElementName = "projects", elementName = "project",
+			style = XCollection.Style.v2) List<ProjectCache> projects = new ArrayList<>();
 
 	public long getLastUpdateTimestamp() {
 		return lastUpdateTimestamp;
@@ -64,7 +59,7 @@ public class Cache {
 	 * Load cached version options for the given artifact. Returns an empty list if the cache is expired.
 	 */
 	@Transient
-	public List<VersionOption> getVersionOptions(ArtifactId artifactId, boolean ensureRecent) {
+	public List<Release> getReleases(ArtifactId artifactId, boolean ensureRecent) {
 
 		if (ensureRecent) {
 			Instant instant = CLOCK.instant();
@@ -90,7 +85,7 @@ public class Cache {
 	/**
 	 * Update the cache with the given version options.
 	 */
-	public void putVersionOptions(ArtifactId artifactId, List<VersionOption> versionOptions) {
+	public void putVersionOptions(ArtifactId artifactId, List<Release> releases) {
 
 		Artifact artifactToUse;
 		synchronized (artifacts) {
@@ -107,7 +102,7 @@ public class Cache {
 			}
 		}
 
-		artifactToUse.setVersionOptions(versionOptions);
+		artifactToUse.setVersionOptions(releases);
 	}
 
 	/**
@@ -117,46 +112,23 @@ public class Cache {
 		this.lastUpdateTimestamp = CLOCK.millis();
 	}
 
-	/**
-	 * Returns all known property-to-artifact mappings. Each {@link Property} carries the property name and the
-	 * artifact(s) whose version it controls.
-	 */
-	public List<Property> getProperties() {
-		return List.copyOf(properties);
-	}
+	public ProjectCache getProject(MavenId mavenId) {
 
-	/**
-	 * Update the cache with the given properties.
-	 */
-	public void setProperties(Collection<VersionCheckCandidate> versionCheckCandidates) {
+		for (ProjectCache project : projects) {
 
-		properties.clear();
-		propertyMap.clear();
-
-		for (VersionCheckCandidate candidate : versionCheckCandidates) {
-
-			for (VersionSource versionSource : candidate.getVersionSources()) {
-				if (versionSource instanceof VersionSource.VersionPropertySource vps) {
-
-					Property property = propertyMap.computeIfAbsent(vps.getProperty(), Property::new);
-					property.addArtifact(candidate.getArtifactId());
-				}
+			if (project == null) {
+				continue;
+			}
+			if (project.matches(mavenId)) {
+				return project;
 			}
 		}
 
-		properties.addAll(propertyMap.values());
+		ProjectCache projectCache = new ProjectCache(mavenId);
+		projects.add(projectCache);
+		projects.sort(ProjectCache.COMPARATOR);
+
+		return projectCache;
 	}
 
-	public @Nullable Property getProperty(String propertyName) {
-
-		if (propertyMap.size() != properties.size()) {
-
-			propertyMap.clear();
-			for (Property property : properties) {
-				propertyMap.put(property.name(), property);
-			}
-		}
-
-		return propertyMap.get(propertyName);
-	}
 }

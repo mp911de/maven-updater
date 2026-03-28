@@ -18,6 +18,8 @@ package biz.paluch.dap;
 import static com.intellij.patterns.PlatformPatterns.*;
 
 import biz.paluch.dap.artifact.ArtifactId;
+import biz.paluch.dap.artifact.ArtifactRelease;
+import biz.paluch.dap.artifact.ArtifactVersion;
 import biz.paluch.dap.state.Artifact;
 import biz.paluch.dap.state.Cache;
 import biz.paluch.dap.state.DependencyAssistantService;
@@ -25,7 +27,9 @@ import biz.paluch.dap.state.Property;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.intellij.codeInsight.completion.CompletionContributor;
 import com.intellij.codeInsight.completion.CompletionParameters;
@@ -68,29 +72,42 @@ public class PropertyVersionCompletionContributor extends CompletionContributor 
 				return;
 			}
 
+			VersionUpgradeLookupService service = new VersionUpgradeLookupService(project, parameters.getOriginalFile());
 			String propertyName = propertyTag.getLocalName();
 			Cache cache = DependencyAssistantService.getInstance(project).getCache();
 
-			// Show all cached versions on a second invocation (Ctrl+Space twice)
-			CompletionResultSet versionsResult = parameters.getInvocationCount() > 1 ? result.withPrefixMatcher("") : result;
+			Property property = service.getProperty(propertyName);
+			if (property == null) {
+				return;
+			}
 
-			List<SuggestionProviderUtil.ArtifactVersion> allOptions = findVersionsForFirstArtifact(propertyName, cache);
+			List<ArtifactRelease> allOptions = findVersionsForFirstArtifact(property, cache);
 			if (allOptions.isEmpty()) {
 				return;
 			}
 
-			SuggestionProviderUtil.addSuggestions(allOptions, versionsResult, ArtifactId::toString);
+			// Run all remaining contributors first and pass their results through unchanged.
+			// Collect the lookup strings they contribute so we can skip our own duplicates.
+			Set<String> alreadyContributed = new HashSet<>();
+			result.runRemainingContributors(parameters, completionResult -> {
+				alreadyContributed.add(completionResult.getLookupElement().getLookupString());
+				result.passResult(completionResult);
+			});
+
+			// Show all cached versions on a second invocation (Ctrl+Space twice)
+			CompletionResultSet versionsResult = parameters.getInvocationCount() > 1 ? result.withPrefixMatcher("") : result;
+			ArtifactVersion currentVersion = service.getCurrentVersion(property);
+
+			List<ArtifactRelease> unique = allOptions.stream()
+					.filter(opt -> !alreadyContributed.contains(opt.release().version().toString())).toList();
+
+			SuggestionProviderUtil.addSuggestions(unique, versionsResult, ArtifactId::toString, currentVersion);
 		}
 
-		private static List<SuggestionProviderUtil.ArtifactVersion> findVersionsForFirstArtifact(String propertyName,
+		private static List<ArtifactRelease> findVersionsForFirstArtifact(Property property,
 				Cache cache) {
 
-			Property property = cache.getProperty(propertyName);
-			if (property == null) {
-				return List.of();
-			}
-
-			List<SuggestionProviderUtil.ArtifactVersion> options = new ArrayList<>();
+			List<ArtifactRelease> options = new ArrayList<>();
 			for (Artifact artifact : property.artifacts()) {
 				options.addAll(SuggestionProviderUtil.findOptions(artifact.toArtifactId(), cache));
 				break;

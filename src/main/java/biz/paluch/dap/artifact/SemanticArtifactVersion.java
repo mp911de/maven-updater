@@ -191,6 +191,11 @@ class SemanticArtifactVersion implements ArtifactVersion {
 	}
 
 	@Override
+	public boolean isOlder(ArtifactVersion other) {
+		return other instanceof SemanticArtifactVersion sav && this.compareTo(sav) < 0;
+	}
+
+	@Override
 	public boolean isNewerMinor(ArtifactVersion other) {
 
 		if (other instanceof SemanticArtifactVersion sav) {

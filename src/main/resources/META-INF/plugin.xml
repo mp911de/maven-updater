@@ -40,6 +40,11 @@ The currently open <code>pom.xml</code> file is used to apply updates to. The pl
 	<depends>com.intellij.modules.xml</depends>
 	<resource-bundle>messages.MessageBundle</resource-bundle>
 
+	<applicationListeners>
+		<listener class="biz.paluch.dap.FlushStateOnSave"
+		          topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener"/>
+	</applicationListeners>
+
 	<extensions defaultExtensionNs="com.intellij">
 		<projectService
 				serviceImplementation="biz.paluch.dap.state.DependencyAssistantService"/>
@@ -53,6 +58,7 @@ The currently open <code>pom.xml</code> file is used to apply updates to. The pl
 		</intentionAction>
 		<completion.contributor
 				language="XML"
+				order="first"
 				implementationClass="biz.paluch.dap.PropertyVersionCompletionContributor"/>
 		<completion.contributor
 				language="XML"
@@ -63,6 +69,18 @@ The currently open <code>pom.xml</code> file is used to apply updates to. The pl
 		<codeInsight.lineMarkerProvider
 				language="XML"
 				implementationClass="biz.paluch.dap.NewerVersionLineMarkerProvider"/>
+		<annotator language="XML"
+		           implementationClass="biz.paluch.dap.NewVersionAnnotator"/>
+		<severitiesProvider
+				implementation="biz.paluch.dap.NewerVersionSeveritiesProvider"/>
+		<localInspection
+				language="XML"
+				shortName="PomArtifactCollection"
+				groupName="Maven"
+				enabledByDefault="true"
+				level="INFORMATION"
+				implementationClass="biz.paluch.dap.PomArtifactCollectionInspection"
+				key="inspection.pom.artifact.collection.display.name"/>
 	</extensions>
 
 	<actions>

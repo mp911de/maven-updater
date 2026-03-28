@@ -24,18 +24,31 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
- * A version string with optional release date from Maven metadata (for display in version dropdown).
+ * A release that consists of a version and an optional release date.
  */
-public record VersionOption(ArtifactVersion version,
-		@Nullable LocalDateTime releaseDate) implements Comparable<VersionOption> {
+public record Release(ArtifactVersion version,
+		@Nullable LocalDateTime releaseDate) implements Comparable<Release>, HasVersion {
 
-	public static VersionOption from(String version, @Nullable String date) {
-		return new VersionOption(ArtifactVersion.of(version),
+	public static Release of(String version) {
+		return of(ArtifactVersion.of(version));
+	}
+
+	public static Release of(ArtifactVersion version) {
+		return new Release(version, null);
+	}
+
+	public static Release from(String version, @Nullable String date) {
+		return new Release(ArtifactVersion.of(version),
 				StringUtils.hasText(date) ? LocalDateTime.of(LocalDate.parse(date), LocalTime.MIDNIGHT) : null);
 	}
 
 	@Override
-	public int compareTo(VersionOption o) {
+	public ArtifactVersion getVersion() {
+		return version;
+	}
+
+	@Override
+	public int compareTo(Release o) {
 
 		if (version.canCompare(o.version)) {
 			return version.compareTo(o.version);
@@ -58,12 +71,16 @@ public record VersionOption(ArtifactVersion version,
 		return string;
 	}
 
-	public boolean isNewer(VersionOption option) {
+	public boolean isNewer(Release option) {
 		return compareTo(option) > 0;
 	}
 
 	public boolean isNewer(ArtifactVersion version) {
 		return this.version.isNewer(version);
+	}
+
+	public boolean isOlder(ArtifactVersion version) {
+		return this.version.isOlder(version);
 	}
 
 	public boolean hasSameMajorMinor(ArtifactVersion current) {
@@ -81,4 +98,5 @@ public record VersionOption(ArtifactVersion version,
 	public boolean isPreview() {
 		return this.version.isPreview();
 	}
+
 }

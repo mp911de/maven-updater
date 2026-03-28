@@ -15,29 +15,34 @@
  */
 package biz.paluch.dap.artifact;
 
-import org.springframework.util.StringUtils;
+import java.util.Comparator;
 
 /**
- * Maven artifact coordinates (groupId + artifactId).
+ * Maven artifact coordinates.
  */
-public record ArtifactId(String groupId, String artifactId) implements Comparable<ArtifactId> {
+public interface ArtifactId extends Comparable<ArtifactId> {
 
-	public static ArtifactId of(String groupId, String artifactId) {
-		return new ArtifactId(groupId, artifactId);
+	Comparator<? super ArtifactId> COMPARATOR = Comparator.comparing(ArtifactId::groupId)
+			.thenComparing(ArtifactId::artifactId);
+
+	Comparator<? super ArtifactId> BY_ARTIFACT_ID = Comparator.comparing(ArtifactId::artifactId)
+			.thenComparing(ArtifactId::groupId);
+
+	/**
+	 * Creates an {@link ArtifactId} from the given group id and artifact id.
+	 */
+	static ArtifactId of(String groupId, String artifactId) {
+		return new DefaultArtifactId(groupId, artifactId);
 	}
 
-	public boolean hasArtifactId() {
-		return StringUtils.hasText(artifactId);
-	}
+	/**
+	 * Returns the group id.
+	 */
+	String groupId();
 
-	@Override
-	public int compareTo(ArtifactId o) {
-		return artifactId().compareToIgnoreCase(o.artifactId);
-	}
-
-	@Override
-	public String toString() {
-		return groupId + ":" + artifactId;
-	}
+	/**
+	 * Returns the artifact id.
+	 */
+	String artifactId();
 
 }

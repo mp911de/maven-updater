@@ -42,7 +42,7 @@ public record DependencyUpdates(String projectName, List<DependencyUpdateOption>
 		for (DependencyUpdateOption item : items) {
 
 			boolean skip = false;
-			for (VersionSource source : item.getCandidate().getVersionSources()) {
+			for (VersionSource source : item.getDependency().getVersionSources()) {
 				if (source instanceof VersionSource.VersionPropertySource && !propertyVersionSources.add(source)) {
 					skip = true;
 					break;

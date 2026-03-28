@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.dap;
+package biz.paluch.dap.artifact;
 
-import javax.swing.Icon;
+/**
+ * Interface to be implemented by objects that have an {@link ArtifactId}.
+ *
+ * @author Mark Paluch
+ */
+public interface HasArtifactId {
 
-import com.intellij.openapi.util.IconLoader;
-import com.intellij.util.IconUtil;
-
-class MavenUpdater {
-
-	public static final Icon ICON = load("/META-INF/dependency-assistant.svg");
-	public static final Icon TRANSPARENT_ICON = IconUtil.filterIcon(ICON, () -> new AlphaImageFilter(0.5f), null);
-
-	private static Icon load(String path) {
-		return IconLoader.getIcon(path, MavenUpdater.class.getClassLoader());
-	}
+	ArtifactId getArtifactId();
 
 }

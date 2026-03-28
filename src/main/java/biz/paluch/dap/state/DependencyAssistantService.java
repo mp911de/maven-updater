@@ -15,6 +15,16 @@
  */
 package biz.paluch.dap.state;
 
+import biz.paluch.dap.artifact.ArtifactId;
+import biz.paluch.dap.artifact.Dependency;
+import biz.paluch.dap.artifact.DependencyCollector;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.jetbrains.idea.maven.model.MavenId;
+import org.jspecify.annotations.Nullable;
+
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
@@ -28,6 +38,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil;
 public final class DependencyAssistantService implements PersistentStateComponent<DependencyAssistantState> {
 
 	private final DependencyAssistantState state = new DependencyAssistantState();
+	private final Map<MavenId, DependencyCollector> dependencies = new ConcurrentHashMap<>();
 
 	/**
 	 * Returns the service instance for the given project.
@@ -48,6 +59,57 @@ public final class DependencyAssistantService implements PersistentStateComponen
 	@Override
 	public void loadState(DependencyAssistantState state) {
 		XmlSerializerUtil.copyBean(state, this.state);
+	}
+
+	public ProjectState getProjectState(MavenId mavenId) {
+		return new DefaultProjectState(mavenId);
+	}
+
+	public void setDependencies(MavenId mavenId, DependencyCollector collector) {
+		dependencies.put(mavenId, collector);
+	}
+
+	class DefaultProjectState implements ProjectState {
+
+		private final MavenId mavenId;
+		private final ProjectCache projectCache;
+
+		public DefaultProjectState(MavenId mavenId) {
+			this.mavenId = mavenId;
+			this.projectCache = getCache().getProject(mavenId);
+		}
+
+		@Override
+		public @Nullable Dependency findDependency(ArtifactId artifactId) {
+
+			DependencyCollector dependencyCollector = dependencies.get(mavenId);
+			if (dependencyCollector == null) {
+				return null;
+			}
+
+			return dependencyCollector.getDependency(artifactId);
+		}
+
+		@Override
+		public void setDependencies(DependencyCollector collector) {
+			dependencies.put(mavenId, collector);
+			projectCache.setProperties(collector.getDependencies());
+		}
+
+		@Override
+		public boolean hasDependencies() {
+			return dependencies.get(mavenId) != null;
+		}
+
+		@Override
+		public void invalidateDependencies() {
+			dependencies.remove(mavenId);
+		}
+
+		@Override
+		public @Nullable Property getProperty(String propertyName) {
+			return projectCache.getProperty(propertyName);
+		}
 	}
 
 }

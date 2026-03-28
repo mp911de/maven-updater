@@ -15,29 +15,18 @@
  */
 package biz.paluch.dap.artifact;
 
-import static org.assertj.core.api.Assertions.*;
-
-import java.time.LocalDateTime;
-
-import org.junit.jupiter.api.Test;
+import java.util.List;
 
 /**
- * Unit tests for {@link VersionOption}.
+ * Source to provide release information.
  *
  * @author Mark Paluch
  */
-class VersionOptionUnitTests {
+public interface ReleaseSource {
 
-	@Test
-	void shouldCompareVersions() {
-
-		VersionOption train = new VersionOption(ArtifactVersion.of("Aluminium-SR1"),
-				LocalDateTime.parse("2017-01-01T00:00:00"));
-		VersionOption v1 = new VersionOption(ArtifactVersion.of("2020.0.0"), LocalDateTime.parse("2019-01-01T00:00:00"));
-		VersionOption v2 = new VersionOption(ArtifactVersion.of("2020.0.1"), LocalDateTime.parse("2019-01-01T00:00:00"));
-
-		assertThat(train).isLessThan(v1);
-		assertThat(v1).isGreaterThan(train).isLessThan(v2);
-	}
+	/**
+	 * Returns the releases for the given artifact.
+	 */
+	List<Release> getReleases(ArtifactId artifactId);
 
 }

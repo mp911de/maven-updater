@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.dap;
+package biz.paluch.dap.artifact;
 
-import javax.swing.Icon;
+/**
+ * @author Mark Paluch
+ */
+public class ArtifactNotFoundException extends RuntimeException {
 
-import com.intellij.openapi.util.IconLoader;
-import com.intellij.util.IconUtil;
+	private final ArtifactId artifactId;
 
-class MavenUpdater {
-
-	public static final Icon ICON = load("/META-INF/dependency-assistant.svg");
-	public static final Icon TRANSPARENT_ICON = IconUtil.filterIcon(ICON, () -> new AlphaImageFilter(0.5f), null);
-
-	private static Icon load(String path) {
-		return IconLoader.getIcon(path, MavenUpdater.class.getClassLoader());
+	public ArtifactNotFoundException(String message, ArtifactId artifactId) {
+		super(message);
+		this.artifactId = artifactId;
 	}
 
+	public ArtifactId getArtifactId() {
+		return artifactId;
+	}
 }

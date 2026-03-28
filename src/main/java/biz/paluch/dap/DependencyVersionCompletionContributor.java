@@ -18,6 +18,8 @@ package biz.paluch.dap;
 import static com.intellij.patterns.PlatformPatterns.*;
 
 import biz.paluch.dap.artifact.ArtifactId;
+import biz.paluch.dap.artifact.ArtifactRelease;
+import biz.paluch.dap.artifact.ArtifactVersion;
 import biz.paluch.dap.state.Cache;
 import biz.paluch.dap.state.DependencyAssistantService;
 
@@ -49,6 +51,7 @@ public class DependencyVersionCompletionContributor extends CompletionContributo
 		extend(CompletionType.BASIC, psiElement().withElementType(XmlTokenType.XML_DATA_CHARACTERS) //
 				.and(psiElement().inside(XmlPatterns.xmlFile())) //
 				.and(psiElement().inside(XmlPatterns.xmlTag().withLocalName("version"))), new VersionSuggestionProvider());
+
 	}
 
 	private static final class VersionSuggestionProvider extends CompletionProvider<CompletionParameters> {
@@ -63,6 +66,8 @@ public class DependencyVersionCompletionContributor extends CompletionContributo
 				return;
 			}
 
+			VersionUpgradeLookupService service = new VersionUpgradeLookupService(project, parameters.getOriginalFile());
+
 			XmlTag parentTag = versionTag.getParentTag();
 			String artifactId = parentTag.getSubTagText("artifactId");
 			String groupId = parentTag.getSubTagText("groupId");
@@ -70,24 +75,26 @@ public class DependencyVersionCompletionContributor extends CompletionContributo
 			if (StringUtils.hasText(artifactId) && StringUtils.hasText(groupId)) {
 
 				Cache cache = DependencyAssistantService.getInstance(project).getCache();
+				ArtifactId artifact = ArtifactId.of(groupId, artifactId);
+				ArtifactVersion currentVersion = service.getCurrentVersion(artifact);
 
 				// Show all cached versions on a second invocation (Ctrl+Space twice)
 				CompletionResultSet versionsResult = parameters.getInvocationCount() > 1 ? result.withPrefixMatcher("")
 						: result;
 
-				List<SuggestionProviderUtil.ArtifactVersion> allOptions = findVersions(ArtifactId.of(groupId, artifactId),
+				List<ArtifactRelease> allOptions = findVersions(artifact,
 						cache);
 				if (allOptions.isEmpty()) {
 					return;
 				}
 
-				SuggestionProviderUtil.addSuggestions(allOptions, versionsResult, it -> "");
+				SuggestionProviderUtil.addSuggestions(allOptions, versionsResult, it -> "", currentVersion);
 			}
 		}
 
-		private static List<SuggestionProviderUtil.ArtifactVersion> findVersions(ArtifactId artifactId, Cache cache) {
+		private static List<ArtifactRelease> findVersions(ArtifactId artifactId, Cache cache) {
 
-			List<SuggestionProviderUtil.ArtifactVersion> options = SuggestionProviderUtil.findOptions(artifactId, cache);
+			List<ArtifactRelease> options = SuggestionProviderUtil.findOptions(artifactId, cache);
 			options.sort(Comparator.reverseOrder());
 			return options;
 		}

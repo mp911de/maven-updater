@@ -17,10 +17,11 @@ package biz.paluch.dap;
 
 import biz.paluch.dap.artifact.ArtifactId;
 import biz.paluch.dap.artifact.ArtifactVersion;
-import biz.paluch.dap.artifact.VersionOption;
+import biz.paluch.dap.artifact.Release;
 import biz.paluch.dap.state.Artifact;
 import biz.paluch.dap.state.Cache;
 import biz.paluch.dap.state.DependencyAssistantService;
+import biz.paluch.dap.state.ProjectState;
 import biz.paluch.dap.state.Property;
 
 import java.awt.Image;
@@ -73,7 +74,7 @@ public class PropertyVersionDocumentationProvider implements PsiDocumentationTar
 	 * </p>
 	 */
 	@Override
-	public @Nullable DocumentationTarget documentationTarget(@NotNull PsiElement targetElement,
+	public @Nullable DocumentationTarget documentationTarget(PsiElement targetElement,
 			@Nullable PsiElement originalElement) {
 
 		// Prefer the element directly at the caret; targetElement may be a resolved reference.
@@ -84,14 +85,22 @@ public class PropertyVersionDocumentationProvider implements PsiDocumentationTar
 			return null;
 		}
 
+
 		Project project = element.getProject();
-		Cache cache = DependencyAssistantService.getInstance(project).getCache();
-		Property property = cache.getProperty(propertyTag.getLocalName());
+		MavenContext mavenContext = MavenContext.of(project, element.getContainingFile());
+
+		if (!mavenContext.isAvailable()) {
+			return null;
+		}
+
+		DependencyAssistantService service = DependencyAssistantService.getInstance(project);
+		ProjectState projectState = service.getProjectState(mavenContext.getMavenId());
+		Property property = projectState.getProperty(propertyTag.getLocalName());
 		if (property == null) {
 			return null;
 		}
 
-		return new PropertyVersionDocTarget(propertyTag, property, cache);
+		return new PropertyVersionDocTarget(propertyTag, property, service.getCache());
 	}
 
 	/**
@@ -174,7 +183,7 @@ public class PropertyVersionDocumentationProvider implements PsiDocumentationTar
 				ArtifactId artifactId = artifact.toArtifactId();
 				sb.append("<p>Controls: <code>").append(artifactId).append("</code></p>");
 
-				List<VersionOption> versions = sortedVersions(cache.getVersionOptions(artifactId, false));
+				List<Release> versions = sortedVersions(cache.getReleases(artifactId, false));
 				if (versions.isEmpty()) {
 					continue;
 				}
@@ -182,14 +191,14 @@ public class PropertyVersionDocumentationProvider implements PsiDocumentationTar
 				hasVersions = true;
 				sb.append("<table>");
 				int count = 0;
-				for (VersionOption v : versions) {
+				for (Release v : versions) {
 					if (count++ >= MAX_VERSIONS) {
 						break;
 					}
 					sb.append("<tr>");
 
 					if (iconImages != null && currentVersion != null) {
-						VersionAge age = VersionAge.fromVersions(currentVersion, v.version());
+						VersionAge age = VersionAge.fromVersions(currentVersion, v);
 						sb.append("<td>" + HtmlChunk.icon(age.getIconName(), age.getIcon()) + "</td>");
 					}
 
@@ -238,8 +247,8 @@ public class PropertyVersionDocumentationProvider implements PsiDocumentationTar
 			}
 		}
 
-		private static List<VersionOption> sortedVersions(List<VersionOption> versions) {
-			List<VersionOption> sorted = new ArrayList<>(versions);
+		private static List<Release> sortedVersions(List<Release> versions) {
+			List<Release> sorted = new ArrayList<>(versions);
 			sorted.sort(Comparator.reverseOrder());
 			return sorted;
 		}

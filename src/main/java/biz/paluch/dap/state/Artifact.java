@@ -16,7 +16,7 @@
 package biz.paluch.dap.state;
 
 import biz.paluch.dap.artifact.ArtifactId;
-import biz.paluch.dap.artifact.VersionOption;
+import biz.paluch.dap.artifact.Release;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,7 @@ public class Artifact {
 	private @Attribute String artifactId;
 
 	private final @XCollection(propertyElementName = "releases", elementName = "release",
-			style = XCollection.Style.v2) List<Release> releases = new ArrayList<>();
+			style = XCollection.Style.v2) List<biz.paluch.dap.state.Release> releases = new ArrayList<>();
 
 	public Artifact() {}
 
@@ -54,7 +54,7 @@ public class Artifact {
 		return artifactId;
 	}
 
-	public List<Release> getReleases() {
+	public List<biz.paluch.dap.state.Release> getReleases() {
 		return releases;
 	}
 
@@ -63,23 +63,24 @@ public class Artifact {
 	}
 
 	@Transient
-	public List<VersionOption> getVersionOptions() {
+	public List<Release> getVersionOptions() {
 
-		List<VersionOption> options = new ArrayList<>();
-		for (Release release : releases) {
+		List<Release> options = new ArrayList<>();
+		for (biz.paluch.dap.state.Release release : releases) {
 			options.add(release.toVersionOption());
 		}
 		return options;
 	}
 
-	public void setVersionOptions(List<VersionOption> versionOptions) {
+	public void setVersionOptions(List<Release> releases) {
 		this.releases.clear();
-		for (VersionOption versionOption : versionOptions) {
-			this.releases.add(Release.from(versionOption));
+		for (Release release : releases) {
+			this.releases.add(biz.paluch.dap.state.Release.from(release));
 		}
 	}
 
 	public ArtifactId toArtifactId() {
-		return new ArtifactId(groupId, artifactId);
+		return ArtifactId.of(getGroupId(), getArtifactId());
 	}
+
 }

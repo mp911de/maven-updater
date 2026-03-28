@@ -112,6 +112,11 @@ final class ReleaseTrainArtifactVersion implements ArtifactVersion {
 	}
 
 	@Override
+	public boolean isOlder(ArtifactVersion other) {
+		return compareTo(other) < 0;
+	}
+
+	@Override
 	public boolean isNewerMinor(ArtifactVersion other) {
 		if (other instanceof ReleaseTrainArtifactVersion otherTrain) {
 			return trainName.equals(otherTrain.trainName) && compareTo(other) < 0;

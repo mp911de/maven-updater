@@ -30,7 +30,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 
 /**
@@ -38,6 +37,8 @@ import com.intellij.psi.xml.XmlTag;
  * &lt;properties&gt;.
  */
 public class UpdateMavenDependenciesIntention extends BaseElementAtCaretIntentionAction implements Iconable {
+
+	public static final UpdateMavenDependenciesIntention INSTANCE = new UpdateMavenDependenciesIntention();
 
 	@Override
 	public String getFamilyName() {
@@ -52,11 +53,7 @@ public class UpdateMavenDependenciesIntention extends BaseElementAtCaretIntentio
 	@Override
 	public boolean isAvailable(Project project, Editor editor, @Nullable PsiElement element) {
 
-		if (element == null || !(element.getContainingFile() instanceof XmlFile xmlFile)) {
-			return false;
-		}
-
-		if (!MavenUtils.isMavenPomFile(xmlFile)) {
+		if (element == null || !MavenUtils.isMavenPomFile(project, editor.getDocument())) {
 			return false;
 		}
 
@@ -71,6 +68,7 @@ public class UpdateMavenDependenciesIntention extends BaseElementAtCaretIntentio
 		}
 
 		if (currentTag.getLocalName().equals("properties") || parentTag.getLocalName().equals("properties")
+				|| currentTag.getLocalName().equals("dependency") || currentTag.getLocalName().equals("plugin")
 				|| parentTag.getLocalName().equals("dependency") || parentTag.getLocalName().equals("plugin")) {
 			return true;
 		}

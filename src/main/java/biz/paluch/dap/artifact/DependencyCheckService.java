@@ -15,6 +15,7 @@
  */
 package biz.paluch.dap.artifact;
 
+import biz.paluch.dap.MavenContext;
 import biz.paluch.dap.MessageBundle;
 import biz.paluch.dap.artifact.xml.PomDependency;
 import biz.paluch.dap.artifact.xml.PomProfile;
@@ -22,7 +23,7 @@ import biz.paluch.dap.artifact.xml.PomProjection;
 import biz.paluch.dap.artifact.xml.XmlBeamProjectorFactory;
 import biz.paluch.dap.state.Cache;
 import biz.paluch.dap.state.DependencyAssistantService;
-import biz.paluch.dap.state.DependencyAssistantState;
+import biz.paluch.dap.state.ProjectState;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ import org.jetbrains.idea.maven.model.MavenRemoteRepository;
 import org.jetbrains.idea.maven.project.MavenProject;
 import org.jetbrains.idea.maven.project.MavenProjectsManager;
 import org.jetbrains.idea.maven.project.MavenProjectsTree;
+import org.jetbrains.idea.reposearch.DependencySearchService;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.CollectionUtils;
@@ -62,12 +64,15 @@ public class DependencyCheckService {
 	private static final Pattern PROPERTY_PATTERN = Pattern.compile("\\$\\{([^}]*)\\}");
 
 	private final Project project;
-	private final DependencyAssistantState state;
+	private final DependencySearchService searchService;
+	private final MavenProjectsManager projectsManager;
+	private final DependencyAssistantService service;
 
 	public DependencyCheckService(Project project) {
 		this.project = project;
-		DependencyAssistantService cacheService = DependencyAssistantService.getInstance(project);
-		this.state = cacheService.getState();
+		this.searchService = DependencySearchService.getInstance(project);
+		this.projectsManager = MavenProjectsManager.getInstance(project);
+		this.service = project.getService(DependencyAssistantService.class);
 	}
 
 	/**
@@ -87,18 +92,14 @@ public class DependencyCheckService {
 			return new DependencyUpdates(projectName, List.of(),
 					List.of(MessageBundle.message("action.check.dependencies.noEditor")));
 		}
+		MavenContext mavenContext = MavenContext.of(project, pomFile);
 
-		MavenProjectsManager projectsManager = MavenProjectsManager.getInstance(project);
-		MavenProject mavenProject = projectsManager.findProject(pomFile);
-
-		if (mavenProject == null) {
+		if (!mavenContext.isAvailable()) {
 			return new DependencyUpdates(projectName, List.of(),
 					List.of(MessageBundle.message("action.check.dependencies.noEditor")));
 		}
 
-		ArtifactCollector collector = new ArtifactCollector();
-		ArtifactCollector nested = new ArtifactCollector();
-		collectArtifacts(pomFile, pomContent, collector, nested, projectsManager);
+		DependencyCollector collector = collectArtifacts(pomContent, pomFile);
 		indicator.setFraction(0.3);
 
 		if (collector.isEmpty()) {
@@ -106,27 +107,32 @@ public class DependencyCheckService {
 					List.of(MessageBundle.message("action.check.dependencies.empty")));
 		}
 
-		Cache cache = state.getCache();
-		List<RemoteRepository> repoUrls = collectRepositories(mavenProject);
-		VersionResolver resolver = new VersionResolver(repoUrls);
+		ProjectState projectState = service.getProjectState(mavenContext.getMavenId());
+
+		ExecutorService executor = AppExecutorUtil.getAppExecutorService();
+		Cache cache = service.getCache();
+		List<ReleaseSource> sources = new ArrayList<>();
+		sources.addAll(mavenContext.doWithMaven(this::collectRepositories));
+		sources.add(new IndexReleaseSource(searchService));
+
+		ReleaseResolver resolver = new ReleaseResolver(sources, executor);
 		List<DependencyUpdateOption> items = new ArrayList<>();
 		List<String> errors = new ArrayList<>();
 
-		ExecutorService executor = AppExecutorUtil.getAppExecutorService();
 		List<Future<ResolverResult>> futures = new ArrayList<>();
-		List<VersionCheckCandidate> tasks = new ArrayList<>(collector.getVersionCheckCandidates());
-		for (VersionCheckCandidate task : tasks) {
+		List<Dependency> tasks = new ArrayList<>(collector.getDependencies());
+		for (Dependency task : tasks) {
 			futures.add(executor.submit(() -> {
 				try {
 
-					List<VersionOption> versionOptions = cache.getVersionOptions(task.getArtifactId(), true);
+					List<Release> releases = cache.getReleases(task.getArtifactId(), true);
 
-					if (CollectionUtils.isEmpty(versionOptions)) {
-						versionOptions = resolver.getVersionSuggestions(task.getArtifactId(), task.getCurrentVersion());
-						cache.putVersionOptions(task.getArtifactId(), versionOptions);
+					if (CollectionUtils.isEmpty(releases)) {
+						releases = resolver.getReleases(task.getArtifactId(), task.getCurrentVersion());
+						cache.putVersionOptions(task.getArtifactId(), releases);
 					}
 
-					return new ResolverResult(null, versionOptions);
+					return new ResolverResult(null, releases);
 				} catch (Exception e) {
 					return new ResolverResult(task.getArtifactId() + ": " + e.getMessage(), List.of());
 				}
@@ -151,20 +157,27 @@ public class DependencyCheckService {
 			if (res.error != null) {
 				errors.add(res.error);
 			}
-			VersionCheckCandidate task = tasks.get(i);
-			DependencyUpdateOption info = new DependencyUpdateOption(task, res.versionOptions);
+			Dependency task = tasks.get(i);
+			DependencyUpdateOption info = new DependencyUpdateOption(task, res.releases);
 			items.add(info);
 		}
 
-		cache.setProperties(collector.getVersionCheckCandidates());
+		projectState.setDependencies(collector);
 		cache.recordUpdate();
-		items.sort(Comparator.comparing(DependencyUpdateOption::artifactId));
+		items.sort(Comparator.comparing(DependencyUpdateOption::getArtifactId, ArtifactId.BY_ARTIFACT_ID));
 
 		return new DependencyUpdates(projectName, items, errors);
 	}
 
-	private void collectArtifacts(VirtualFile pomFile, String pomContent, ArtifactCollector collector,
-			ArtifactCollector treeCollector, MavenProjectsManager projectsManager) throws IOException {
+	public DependencyCollector collectArtifacts(String pomContent, VirtualFile pomFile) {
+		DependencyCollector collector = new DependencyCollector();
+		DependencyCollector nested = new DependencyCollector();
+		collectArtifacts(pomFile, pomContent, collector, nested, projectsManager);
+		return collector;
+	}
+
+	private void collectArtifacts(VirtualFile pomFile, String pomContent, DependencyCollector collector,
+			DependencyCollector treeCollector, MavenProjectsManager projectsManager) {
 
 		MavenProject currentProject = projectsManager.findProject(pomFile);
 		MavenProjectsTree projectsTree = projectsManager.getProjectsTree();
@@ -255,7 +268,7 @@ public class DependencyCheckService {
 
 		VersionSource versionSource = getVersionSource(dependency.getVersion());
 		if (a != null) {
-			callback.accept(new ArtifactId(g, a),
+			callback.accept(ArtifactId.of(g, a),
 					new ArtifactUsage(declarationSource, versionSource));
 		}
 	}
@@ -277,11 +290,15 @@ public class DependencyCheckService {
 		return XmlBeamProjectorFactory.INSTANCE.projectXMLString(pomContent, PomProjection.class);
 	}
 
-	private PomProjection project(VirtualFile file) throws IOException {
-		return project(new String(file.contentsToByteArray(), file.getCharset()));
+	private PomProjection project(VirtualFile file) {
+		try {
+			return project(new String(file.contentsToByteArray(), file.getCharset()));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	private List<RemoteRepository> collectRepositories(MavenProject mavenProject) {
+	private List<ReleaseSource> collectRepositories(MavenProject mavenProject) {
 
 		Map<String, RepositoryCredentials> credentials = SettingsXmlCredentialsLoader.load(project);
 
@@ -302,7 +319,7 @@ public class DependencyCheckService {
 			}
 		}
 
-		return new ArrayList<>(urls);
+		return urls.stream().map(MavenRepositoryReleaseSource::new).map(it -> (ReleaseSource) it).toList();
 	}
 
 	interface Projects {
@@ -476,7 +493,7 @@ public class DependencyCheckService {
 	}
 
 
-	private record ResolverResult(@Nullable String error, List<VersionOption> versionOptions) {
+	private record ResolverResult(@Nullable String error, List<Release> releases) {
 
 	}
 

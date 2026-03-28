@@ -16,7 +16,7 @@
 package biz.paluch.dap;
 
 import biz.paluch.dap.artifact.ArtifactVersion;
-import biz.paluch.dap.artifact.VersionOption;
+import biz.paluch.dap.artifact.Release;
 
 import java.awt.Component;
 
@@ -31,7 +31,7 @@ import com.intellij.util.ui.JBUI;
 /**
  * List cell renderer that shows an icon (older / newer patch / minor / major) plus version text.
  */
-class VersionOptionCellRenderer extends JLabel implements ListCellRenderer<VersionOption> {
+class VersionOptionCellRenderer extends JLabel implements ListCellRenderer<Release> {
 
 	private final ArtifactVersion currentVersion;
 
@@ -42,10 +42,10 @@ class VersionOptionCellRenderer extends JLabel implements ListCellRenderer<Versi
 	}
 
 	@Override
-	public Component getListCellRendererComponent(JList<? extends VersionOption> list, @Nullable VersionOption value,
+	public Component getListCellRendererComponent(JList<? extends Release> list, @Nullable Release value,
 			int index, boolean isSelected, boolean cellHasFocus) {
 		setText(value != null ? value.toString() : "");
-		setIcon(value != null ? VersionAge.fromVersions(currentVersion, value.version()).getIcon() : null);
+		setIcon(value != null ? VersionAge.fromVersions(currentVersion, value).getIcon() : null);
 		return this;
 	}
 

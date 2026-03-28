@@ -13,20 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.dap;
+package biz.paluch.dap.artifact;
 
-import javax.swing.Icon;
+/**
+ * An artifact release.
+ *
+ * @param artifactId
+ * @param release
+ */
+public record ArtifactRelease(ArtifactId artifactId,
+		Release release) implements Comparable<ArtifactRelease>, HasVersion {
 
-import com.intellij.openapi.util.IconLoader;
-import com.intellij.util.IconUtil;
-
-class MavenUpdater {
-
-	public static final Icon ICON = load("/META-INF/dependency-assistant.svg");
-	public static final Icon TRANSPARENT_ICON = IconUtil.filterIcon(ICON, () -> new AlphaImageFilter(0.5f), null);
-
-	private static Icon load(String path) {
-		return IconLoader.getIcon(path, MavenUpdater.class.getClassLoader());
+	@Override
+	public int compareTo(ArtifactRelease o) {
+		return release.compareTo(o.release());
 	}
 
+	public boolean isNewer(ArtifactVersion currentVersion) {
+		return release.isNewer(currentVersion);
+	}
+
+	public boolean isOlder(ArtifactVersion currentVersion) {
+		return release.isOlder(currentVersion);
+	}
+
+	@Override
+	public ArtifactVersion getVersion() {
+		return release.version();
+	}
 }

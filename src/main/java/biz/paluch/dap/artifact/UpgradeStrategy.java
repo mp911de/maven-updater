@@ -33,10 +33,10 @@ public enum UpgradeStrategy {
 	PATCH {
 		@Override
 		@Nullable
-		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public Release select(ArtifactVersion current, Collection<Release> options) {
 
 			return options.stream() //
-					.filter(Predicate.not(VersionOption::isPreview)) //
+					.filter(Predicate.not(Release::isPreview)) //
 					.filter(opt -> opt.version().hasSameMajorMinor(current) && opt.isNewer(current)) //
 					.filter(opt -> opt.isReleaseVersion() || opt.isBugFixVersion()) //
 					.findFirst().orElse(null);
@@ -49,9 +49,9 @@ public enum UpgradeStrategy {
 	MINOR {
 		@Override
 		@Nullable
-		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public Release select(ArtifactVersion current, Collection<Release> options) {
 			return options.stream() //
-					.filter(Predicate.not(VersionOption::isPreview)) //
+					.filter(Predicate.not(Release::isPreview)) //
 					.filter(opt -> opt.version().hasSameMajor(current) && !opt.hasSameMajorMinor(current) && opt.isNewer(current))
 					.findFirst().orElse(null);
 		}
@@ -63,9 +63,9 @@ public enum UpgradeStrategy {
 	MAJOR {
 		@Override
 		@Nullable
-		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public Release select(ArtifactVersion current, Collection<Release> options) {
 			return options.stream() //
-					.filter(Predicate.not(VersionOption::isPreview)) //
+					.filter(Predicate.not(Release::isPreview)) //
 					.filter(opt -> !opt.version().hasSameMajor(current) && opt.isNewer(current)) //
 					.findFirst().orElse(null);
 		}
@@ -77,9 +77,9 @@ public enum UpgradeStrategy {
 	LATEST {
 		@Override
 		@Nullable
-		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public Release select(ArtifactVersion current, Collection<Release> options) {
 			return options.stream() //
-					.filter(Predicate.not(VersionOption::isPreview)) //
+					.filter(Predicate.not(Release::isPreview)) //
 					.findFirst().orElse(null);
 		}
 
@@ -88,13 +88,13 @@ public enum UpgradeStrategy {
 	PREVIEW {
 		@Override
 		@Nullable
-		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public Release select(ArtifactVersion current, Collection<Release> options) {
 			return options.stream() //
-					.filter(VersionOption::isPreview) //
+					.filter(Release::isPreview) //
 					.filter(opt -> opt.isNewer(current)) //
 					.findFirst().orElse(null);
 		}
 	};
 
-	public abstract @Nullable VersionOption select(ArtifactVersion current, Collection<VersionOption> options);
+	public abstract @Nullable Release select(ArtifactVersion current, Collection<Release> options);
 }

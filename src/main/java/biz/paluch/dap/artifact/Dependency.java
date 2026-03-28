@@ -21,20 +21,23 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
+ * A project dependency with its declaration sources.
+ *
  * @author Mark Paluch
  */
-public class VersionCheckCandidate {
+public class Dependency implements HasArtifactId {
 
 	private final ArtifactId artifactId;
 	private final ArtifactVersion currentVersion;
 	private final Set<VersionSource> versionSources = new LinkedHashSet<>();
 	private final Set<DeclarationSource> declarationSources = new LinkedHashSet<>();
 
-	public VersionCheckCandidate(ArtifactId artifactId, ArtifactVersion currentVersion) {
+	public Dependency(ArtifactId artifactId, ArtifactVersion currentVersion) {
 		this.artifactId = artifactId;
 		this.currentVersion = currentVersion;
 	}
 
+	@Override
 	public ArtifactId getArtifactId() {
 		return artifactId;
 	}
@@ -51,12 +54,12 @@ public class VersionCheckCandidate {
 		return declarationSources;
 	}
 
-	public VersionCheckCandidate addVersionSource(VersionSource versionSource) {
+	public Dependency addVersionSource(VersionSource versionSource) {
 		this.versionSources.add(versionSource);
 		return this;
 	}
 
-	public VersionCheckCandidate addDeclarationSource(DeclarationSource declarationSource) {
+	public Dependency addDeclarationSource(DeclarationSource declarationSource) {
 		this.declarationSources.add(declarationSource);
 		return this;
 	}

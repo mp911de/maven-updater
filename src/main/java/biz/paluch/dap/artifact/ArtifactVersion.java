@@ -21,7 +21,7 @@ package biz.paluch.dap.artifact;
  *
  * @author Mark Paluch
  */
-public interface ArtifactVersion extends Comparable<ArtifactVersion> {
+public interface ArtifactVersion extends Comparable<ArtifactVersion>, HasVersion {
 
 	/**
 	 * Create a release version from a numeric {@link NumericVersionComponents} (e.g. {@code 1.2.3} →
@@ -78,6 +78,11 @@ public interface ArtifactVersion extends Comparable<ArtifactVersion> {
 	 * @return {@code true} if {@code other} is a newer minor in the same line
 	 */
 	boolean isNewerMinor(ArtifactVersion other);
+
+	/**
+	 * Whether this version is strictly older than the given version.
+	 */
+	boolean isOlder(ArtifactVersion other);
 
 	/**
 	 * Whether this version shares the same major.minor (semantic) or release train name (release-train) as the given
@@ -142,5 +147,10 @@ public interface ArtifactVersion extends Comparable<ArtifactVersion> {
 
 	default boolean canCompare(ArtifactVersion version) {
 		return getClass().equals(version.getClass());
+	}
+
+	@Override
+	default ArtifactVersion getVersion() {
+		return this;
 	}
 }

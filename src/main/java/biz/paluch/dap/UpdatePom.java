@@ -262,8 +262,8 @@ class UpdatePom {
 			Collection<DeclarationSource> declarationSources, Collection<VersionSource> versionSources) {
 
 		public static DependencyUpdate of(DependencyUpdateOption option) {
-			return new DependencyUpdate(option.artifactId(), option.getRequiredUpdateTo(),
-					option.getCandidate().getDeclarationSources(), option.getCandidate().getVersionSources());
+			return new DependencyUpdate(option.getArtifactId(), option.getRequiredUpdateTo(),
+					option.getDependency().getDeclarationSources(), option.getDependency().getVersionSources());
 		}
 
 	}

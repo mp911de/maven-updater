@@ -16,6 +16,7 @@
 package biz.paluch.dap;
 
 import biz.paluch.dap.artifact.ArtifactVersion;
+import biz.paluch.dap.artifact.HasVersion;
 import biz.paluch.dap.artifact.UpgradeStrategy;
 
 import javax.swing.Icon;
@@ -47,6 +48,14 @@ enum VersionAge {
 			case MAJOR, LATEST -> NEWER_MAJOR;
 			case PREVIEW -> PREVIEW;
 		};
+	}
+
+	public static VersionAge fromVersions(HasVersion currentVersion, HasVersion otherVersion) {
+
+		ArtifactVersion current = currentVersion.getVersion();
+		ArtifactVersion option = otherVersion.getVersion();
+
+		return fromVersions(current, option);
 	}
 
 	public static VersionAge fromVersions(ArtifactVersion current, ArtifactVersion option) {

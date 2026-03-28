@@ -20,8 +20,8 @@ import biz.paluch.dap.artifact.ArtifactVersion;
 import biz.paluch.dap.artifact.DeclarationSource;
 import biz.paluch.dap.artifact.DependencyUpdateOption;
 import biz.paluch.dap.artifact.DependencyUpdates;
+import biz.paluch.dap.artifact.Release;
 import biz.paluch.dap.artifact.UpgradeStrategy;
-import biz.paluch.dap.artifact.VersionOption;
 import biz.paluch.dap.artifact.VersionSource;
 import icons.MavenIcons;
 
@@ -258,7 +258,7 @@ class DependencyCheckDialog extends DialogWrapper {
 		table.repaint();
 	}
 
-	private @Nullable ArtifactVersion pickTargetVersion(DependencyUpdateOption option, List<VersionOption> options,
+	private @Nullable ArtifactVersion pickTargetVersion(DependencyUpdateOption option, List<Release> options,
 			DependencyUpdateModel.UpgradeStrategies strategy) {
 		if (strategy == DependencyUpdateModel.UpgradeStrategies.MANUAL) {
 			return null;
@@ -267,7 +267,7 @@ class DependencyCheckDialog extends DialogWrapper {
 			return null;
 		}
 
-		VersionOption upgradeTo = option.getTargets().get(strategy.getStrategy());
+		Release upgradeTo = option.getTargets().get(strategy.getStrategy());
 		if (upgradeTo != null) {
 			return upgradeTo.version();
 		}
@@ -280,7 +280,7 @@ class DependencyCheckDialog extends DialogWrapper {
 		if (suggestion == null) {
 			return;
 		}
-		VersionOption vo = suggestion.getTargets().get(strategy);
+		Release vo = suggestion.getTargets().get(strategy);
 		if (vo == null) {
 			return;
 		}
@@ -400,7 +400,7 @@ class DependencyCheckDialog extends DialogWrapper {
 			setClickCountToStart(1);
 			buttonPanel.setOpaque(true);
 			for (UpgradeStrategy strategy : UpgradeStrategy.values()) {
-				VersionOption vo = option.getTargets().get(strategy);
+				Release vo = option.getTargets().get(strategy);
 				if (vo == null || strategy == UpgradeStrategy.LATEST) {
 					continue;
 				}
@@ -419,7 +419,7 @@ class DependencyCheckDialog extends DialogWrapper {
 			}
 		}
 
-		private static JButton createButton(Icon icon, String tooltip, String shortLabel, VersionOption version) {
+		private static JButton createButton(Icon icon, String tooltip, String shortLabel, Release version) {
 			JButton b = new JButton(icon);
 			b.setToolTipText(tooltip);
 			b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -475,7 +475,8 @@ class DependencyCheckDialog extends DialogWrapper {
 						row, column);
 				DependencyUpdateOption option = ModelUtil.getOption(table, row);
 
-				String tooltip = option.artifactId().toString();
+				String artifactId = option.getArtifactId().toString();
+				String tooltip = artifactId;
 				boolean hasPropertyVersion = option.hasPropertyVersion();
 				if (hasPropertyVersion) {
 					VersionSource.VersionPropertySource propertyVersion = option.getPropertyVersion();
@@ -488,7 +489,7 @@ class DependencyCheckDialog extends DialogWrapper {
 				boolean plugin = option.source() instanceof DeclarationSource.Plugin;
 
 				if (plugin) {
-					tooltip += MessageBundle.message("dialog.tooltip.plugin", option.artifactId().toString());
+					tooltip += MessageBundle.message("dialog.tooltip.plugin", artifactId);
 				}
 
 				if (option.source() instanceof DeclarationSource.Profile profile) {
@@ -543,7 +544,7 @@ class DependencyCheckDialog extends DialogWrapper {
 
 		@Override
 		public ArtifactId valueOf(DependencyUpdateOption item) {
-			return item.artifactId();
+			return item.getArtifactId();
 		}
 
 		@Override
@@ -666,7 +667,7 @@ class DependencyCheckDialog extends DialogWrapper {
 
 						editor.getCombo().addActionListener(actionEvent -> {
 
-							VersionOption option = (VersionOption) editor.getCombo().getSelectedItem();
+							Release option = (Release) editor.getCombo().getSelectedItem();
 
 							if (option != null && !option.version().equals(info.getUpdateTo())) {
 								info.setUpdateTo(option.version());
