@@ -60,6 +60,9 @@ The currently open <code>pom.xml</code> file is used to apply updates to. The pl
 				implementationClass="biz.paluch.dap.DependencyVersionCompletionContributor"/>
 		<platform.backend.documentation.psiTargetProvider
 				implementation="biz.paluch.dap.PropertyVersionDocumentationProvider"/>
+		<codeInsight.lineMarkerProvider
+				language="XML"
+				implementationClass="biz.paluch.dap.OutdatedVersionLineMarkerProvider"/>
 	</extensions>
 
 	<actions>

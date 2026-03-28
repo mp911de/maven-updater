@@ -33,7 +33,7 @@ public enum UpgradeStrategy {
 	PATCH {
 		@Override
 		@Nullable
-		VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
 
 			return options.stream() //
 					.filter(Predicate.not(VersionOption::isPreview)) //
@@ -49,7 +49,7 @@ public enum UpgradeStrategy {
 	MINOR {
 		@Override
 		@Nullable
-		VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
 			return options.stream() //
 					.filter(Predicate.not(VersionOption::isPreview)) //
 					.filter(opt -> opt.version().hasSameMajor(current) && !opt.hasSameMajorMinor(current) && opt.isNewer(current))
@@ -63,7 +63,7 @@ public enum UpgradeStrategy {
 	MAJOR {
 		@Override
 		@Nullable
-		VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
 			return options.stream() //
 					.filter(Predicate.not(VersionOption::isPreview)) //
 					.filter(opt -> !opt.version().hasSameMajor(current) && opt.isNewer(current)) //
@@ -77,7 +77,7 @@ public enum UpgradeStrategy {
 	LATEST {
 		@Override
 		@Nullable
-		VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
 			return options.stream() //
 					.filter(Predicate.not(VersionOption::isPreview)) //
 					.findFirst().orElse(null);
@@ -88,7 +88,7 @@ public enum UpgradeStrategy {
 	PREVIEW {
 		@Override
 		@Nullable
-		VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
+		public VersionOption select(ArtifactVersion current, Collection<VersionOption> options) {
 			return options.stream() //
 					.filter(VersionOption::isPreview) //
 					.filter(opt -> opt.isNewer(current)) //
@@ -96,5 +96,5 @@ public enum UpgradeStrategy {
 		}
 	};
 
-	abstract @Nullable VersionOption select(ArtifactVersion current, Collection<VersionOption> options);
+	public abstract @Nullable VersionOption select(ArtifactVersion current, Collection<VersionOption> options);
 }

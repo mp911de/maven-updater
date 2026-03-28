@@ -283,18 +283,22 @@ public class DependencyCheckService {
 
 	private List<RemoteRepository> collectRepositories(MavenProject mavenProject) {
 
+		Map<String, RepositoryCredentials> credentials = SettingsXmlCredentialsLoader.load(project);
+
 		Set<RemoteRepository> urls = new LinkedHashSet<>();
 		for (MavenRemoteRepository repository : mavenProject.getRemoteRepositories()) {
 			String url = repository.getUrl();
 			if (url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
-				urls.add(new RemoteRepository(repository.getId(), url.endsWith("/") ? url : url + "/"));
+				String id = repository.getId();
+				urls.add(new RemoteRepository(id, url.endsWith("/") ? url : url + "/", credentials.get(id)));
 			}
 		}
 
 		for (MavenRemoteRepository repository : mavenProject.getRemotePluginRepositories()) {
 			String url = repository.getUrl();
 			if (url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
-				urls.add(new RemoteRepository(repository.getId(), url.endsWith("/") ? url : url + "/"));
+				String id = repository.getId();
+				urls.add(new RemoteRepository(id, url.endsWith("/") ? url : url + "/", credentials.get(id)));
 			}
 		}
 

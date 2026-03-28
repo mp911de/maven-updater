@@ -15,22 +15,11 @@
  */
 package biz.paluch.dap.artifact;
 
-import org.jspecify.annotations.Nullable;
-
 /**
- * A remote Maven repository with an optional set of HTTP Basic-auth credentials resolved from {@code settings.xml}.
+ * HTTP Basic-auth credentials for a Maven repository server entry.
  *
- * @author Mark Paluch
+ * @param username server username
+ * @param password plain-text password (Maven-encrypted passwords are not supported and are silently skipped)
  */
-public record RemoteRepository(String id, String url, @Nullable RepositoryCredentials credentials) {
-
-	/** Convenience constructor for repositories that require no authentication. */
-	public RemoteRepository(String id, String url) {
-		this(id, url, null);
-	}
-
-	@Override
-	public String toString() {
-		return "Repository " + id + " [" + url + "]";
-	}
+public record RepositoryCredentials(String username, String password) {
 }

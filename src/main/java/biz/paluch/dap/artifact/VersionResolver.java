@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -83,8 +84,8 @@ public class VersionResolver {
 			URI metadataUri = URI.create(base).resolve(metadataPath);
 			URI directoryUri = URI.create(base).resolve(path);
 			try {
-				String xml = fetchUrl(metadataUri);
-				String directoryListing = fetchUrl(directoryUri);
+				String xml = fetchUrl(metadataUri, repository.credentials());
+				String directoryListing = fetchUrl(directoryUri, repository.credentials());
 				if (xml == null) {
 					continue;
 				}
@@ -175,11 +176,18 @@ public class VersionResolver {
 		return result;
 	}
 
-	private static @Nullable String fetchUrl(URI uri) {
+	private static @Nullable String fetchUrl(URI uri, @Nullable RepositoryCredentials credentials) {
 
 		String url = uri.toASCIIString();
 		try {
 			return HttpRequests.request(url).connectTimeout(10_000).readTimeout(10_000).productNameAsUserAgent()
+					.tuner(connection -> {
+						if (credentials != null) {
+							String token = credentials.username() + ":" + credentials.password();
+							String encoded = Base64.getEncoder().encodeToString(token.getBytes(StandardCharsets.UTF_8));
+							connection.setRequestProperty("Authorization", "Basic " + encoded);
+						}
+					})
 					.connect(request -> {
 						try (var stream = request.getInputStream()) {
 							return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
