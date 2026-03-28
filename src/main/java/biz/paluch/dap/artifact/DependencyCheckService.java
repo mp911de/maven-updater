@@ -59,12 +59,11 @@ import com.intellij.util.concurrency.AppExecutorUtil;
 public class DependencyCheckService {
 
 	private final Project project;
-	private final DependencyAssistantService cacheService;
 	private final DependencyAssistantState state;
 
 	public DependencyCheckService(Project project) {
 		this.project = project;
-		this.cacheService = DependencyAssistantService.getInstance(project);
+		DependencyAssistantService cacheService = DependencyAssistantService.getInstance(project);
 		this.state = cacheService.getState();
 	}
 
@@ -231,7 +230,7 @@ public class DependencyCheckService {
 	}
 
 	private void doWithDependency(Projects projects, PomDependency dependency, DeclarationSource declarationSource,
-			BiConsumer<biz.paluch.dap.artifact.ArtifactId, ArtifactUsage> callback) {
+			BiConsumer<ArtifactId, ArtifactUsage> callback) {
 
 		String g = dependency.getGroupId();
 		g = StringUtils.hasText(g) ? g : "org.apache.maven.plugins";
@@ -247,7 +246,7 @@ public class DependencyCheckService {
 
 		VersionSource versionSource = getVersionSource(dependency.getVersion());
 		if (a != null) {
-			callback.accept(new biz.paluch.dap.artifact.ArtifactId(g, a),
+			callback.accept(new ArtifactId(g, a),
 					new ArtifactUsage(declarationSource, versionSource));
 		}
 	}
@@ -371,7 +370,7 @@ public class DependencyCheckService {
 	}
 
 	private void doWithArtifacts(Projects projects, PomProjection pom,
-			BiConsumer<biz.paluch.dap.artifact.ArtifactId, ArtifactUsage> callback) {
+			BiConsumer<ArtifactId, ArtifactUsage> callback) {
 
 		for (PomDependency dep : pom.getDependencyManagementDependencies()) {
 			doWithDependency(projects, dep, DeclarationSource.managed(), callback);

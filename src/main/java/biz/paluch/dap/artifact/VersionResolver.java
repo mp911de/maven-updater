@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -45,23 +46,29 @@ public class VersionResolver {
 
 	private static final Logger LOG = Logger.getInstance(VersionResolver.class);
 
-	private final List<RemoteRepository> reposirepositoriesoryUrls;
+	private final List<RemoteRepository> repositories;
 
-	private static final Pattern DIRECTORY_LISTING_LINE_REGEX = Pattern
+	private static final Pattern DIRECTORY_LISTING_PATTERN = Pattern
 			.compile("<a (?>[^>]+)>([^/]+)/</a>(?>\\s*)(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2})(?>\\s*)(?>-)?");
 
 	private static final DateTimeFormatter DIRECTORY_LISTING_DATE_FORMATTER = DateTimeFormatter
 			.ofPattern("uuuu-MM-dd HH:mm");
 
+	private static final Pattern ARTIFACTORY_DIRECTORY_LISTING_PATTERN = Pattern
+			.compile("<a (?>[^>]+)>([^/]+)/</a>(?>\\s*)(\\d{2}-[A-Za-z]{3}-\\d{4} \\d{2}:\\d{2})(?>\\s*)(?>-)?");
+
+	private static final DateTimeFormatter DIRECTORY_LISTING_ARTIFACTORY_DATE_FORMATTER = DateTimeFormatter
+			.ofPattern("dd-MMM-uuuu HH:mm", Locale.ENGLISH);
+
 	public VersionResolver(List<RemoteRepository> repositoryUrls) {
-		this.reposirepositoriesoryUrls = repositoryUrls;
+		this.repositories = repositoryUrls;
 	}
 
 	/**
 	 * Returns version suggestions: same major.minor as current plus all newer versions. Excludes SNAPSHOTs. Release dates
 	 * are parsed from the dependency directory listing (HTML).
 	 */
-	public List<VersionOption> getVersionSuggestions(biz.paluch.dap.artifact.ArtifactId coordinate,
+	public List<VersionOption> getVersionSuggestions(ArtifactId coordinate,
 			ArtifactVersion currentVersion) {
 
 		String path = coordinate.groupId().replace(".", "/") + "/" + coordinate.artifactId() + "/";
@@ -70,7 +77,7 @@ public class VersionResolver {
 		Map<String, LocalDateTime> releaseDates = new HashMap<>();
 		Set<ArtifactVersion> versions = new TreeSet<>(Comparator.reverseOrder());
 
-		for (RemoteRepository repository : reposirepositoriesoryUrls) {
+		for (RemoteRepository repository : repositories) {
 			String baseUrl = repository.url();
 			String base = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 			URI metadataUri = URI.create(base).resolve(metadataPath);
@@ -116,8 +123,8 @@ public class VersionResolver {
 			}
 			if (SemanticArtifactVersion.isVersion(trimmed)) {
 				result.add(SemanticArtifactVersion.of(trimmed));
-			} else if (biz.paluch.dap.artifact.ReleaseTrainArtifactVersion.isReleaseTrainVersion(trimmed)) {
-				result.add(biz.paluch.dap.artifact.ReleaseTrainArtifactVersion.of(trimmed));
+			} else if (ReleaseTrainArtifactVersion.isReleaseTrainVersion(trimmed)) {
+				result.add(ReleaseTrainArtifactVersion.of(trimmed));
 			}
 		}
 
@@ -133,19 +140,36 @@ public class VersionResolver {
 		}
 
 		for (String line : html.lines().toList()) {
-			Matcher match = DIRECTORY_LISTING_LINE_REGEX.matcher(line);
-			if (!match.find()) {
+
+			Matcher match = DIRECTORY_LISTING_PATTERN.matcher(line);
+
+			if (match.find()) {
+				String version = match.group(1) != null ? match.group(1).trim() : null;
+				String dateStr = match.group(2) != null ? match.group(2).trim() : null;
+				if (version != null && dateStr != null) {
+					try {
+						result.put(version, LocalDateTime.from(DIRECTORY_LISTING_DATE_FORMATTER.parse(dateStr)));
+					} catch (Exception e) {
+						LOG.debug("Could not parse directory listing date for version " + version, e);
+					}
+				}
 				continue;
 			}
-			String version = match.group(1) != null ? match.group(1).trim() : null;
-			String dateStr = match.group(2) != null ? match.group(2).trim() : null;
-			if (version == null || dateStr == null) {
-				continue;
-			}
-			try {
-				result.put(version, LocalDateTime.from(DIRECTORY_LISTING_DATE_FORMATTER.parse(dateStr)));
-			} catch (Exception e) {
-				LOG.debug("Could not parse directory listing date for version " + version, e);
+
+			match = ARTIFACTORY_DIRECTORY_LISTING_PATTERN.matcher(line);
+
+			if (match.find()) {
+
+				String version = match.group(1) != null ? match.group(1).trim() : null;
+				String dateStr = match.group(2) != null ? match.group(2).trim() : null;
+
+				if (version != null && dateStr != null) {
+					try {
+						result.put(version, LocalDateTime.from(DIRECTORY_LISTING_ARTIFACTORY_DATE_FORMATTER.parse(dateStr)));
+					} catch (Exception e) {
+						LOG.debug("Could not parse directory listing date for version " + version, e);
+					}
+				}
 			}
 		}
 		return result;
